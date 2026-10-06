@@ -1,17 +1,16 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify
+from flask import Flask, render_template, request, redirect, url_for, jsonify, send_from_directory
 import json
 import os
 import subprocess
 import string
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 import sys
 import shutil
 import threading
 import time
 import zipfile
 import psutil
-import re
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024
@@ -24,7 +23,7 @@ RUNNING_PROCESSES = {}
 os.makedirs(BOTS_DIR, exist_ok=True)
 
 # ============================================
-# ডাটাবেস ও হেল্পার (Database & Helper Functions)
+# ডাটাবেস ও হেল্পার ফাংশন
 # ============================================
 
 def load_servers():
@@ -51,12 +50,12 @@ def create_default_files(server_dir):
     main_py = os.path.join(server_dir, 'main.py')
     if not os.path.exists(main_py):
         with open(main_py, 'w', encoding='utf-8') as f:
-            f.write('''# JUBAYER HOSTING - Bot
+            f.write('''# Python Bot Console
 import time
 
 print("\\033[92m" + "=" * 40)
-print("  Bot is running on JUBAYER HOSTING")
-print("  Termux Console Ready!")
+print("  Bot is running successfully!")
+print("  Terminal Console Ready!")
 print("=" * 40 + "\\033[0m")
 
 counter = 0
@@ -69,7 +68,7 @@ while True:
     req_file = os.path.join(server_dir, 'requirements.txt')
     if not os.path.exists(req_file):
         with open(req_file, 'w', encoding='utf-8') as f:
-            f.write('# Add your pip packages here\n')
+            f.write('# Add pip packages here\n')
 
 def get_or_create_default_server():
     servers = load_servers()
@@ -79,8 +78,6 @@ def get_or_create_default_server():
         servers['default'] = {
             'server_id': 'default',
             'type': 'python',
-            'ram': '1GB',
-            'disk': '1GB',
             'status': 'stopped',
             'pid': None,
             'created': str(datetime.now()),
@@ -94,7 +91,7 @@ def get_or_create_default_server():
     return servers['default']
 
 # ============================================
-# রেট লিমিট ও প্রসেস মনিটর
+# রেট লিমিট ও প্রসেস রানার
 # ============================================
 
 class RateLimiter:
@@ -197,6 +194,7 @@ def run_bot(server_id, main_file='main.py', requirements_file='requirements.txt'
         
         RUNNING_PROCESSES[server_id] = proc
         
+        # CPU Monitor
         def rate_monitor():
             while proc.poll() is None:
                 time.sleep(5)
@@ -204,34 +202,39 @@ def run_bot(server_id, main_file='main.py', requirements_file='requirements.txt'
                 if exceeded:
                     log(f"\n\033[91m[{ts()}] CPU Limit exceeded ({avg_cpu:.1f}% > {cpu_limit}%), stopping...\033[0m")
                     proc.terminate()
-                    servers = load_servers()
-                    if server_id in servers:
-                        servers[server_id]['status'] = 'stopped'
-                        servers[server_id]['pid'] = None
-                        servers[server_id]['rate_limit_exceeded'] = True
-                        save_servers(servers)
+                    servers_curr = load_servers()
+                    if server_id in servers_curr:
+                        servers_curr[server_id]['status'] = 'stopped'
+                        servers_curr[server_id]['pid'] = None
+                        servers_curr[server_id]['rate_limit_exceeded'] = True
+                        save_servers(servers_curr)
                     RUNNING_PROCESSES.pop(server_id, None)
                     break
         
         threading.Thread(target=rate_monitor, daemon=True).start()
         
+        # Output Streamer ও Auto-Exit Handler
         def stream_output():
             try:
                 for line in iter(proc.stdout.readline, ''):
                     if not line:
                         break
-                    
-                    if any(c in line for c in ['\x1b[2J', '\x1b[H', '[H[2J', '\033[2J', '\x1b[3J']):
-                        with open(log_file, 'w', encoding='utf-8') as f:
-                            f.write("")
-                    
                     with open(log_file, 'a', encoding='utf-8') as f:
                         f.write(line)
                         f.flush()
             except Exception: 
                 pass
             finally:
+                proc.wait()
+                exit_code = proc.returncode
+                log(f"\n\033[90m[{ts()}] Process exited with code {exit_code}\033[0m")
+                # Auto update status if exited
                 RUNNING_PROCESSES.pop(server_id, None)
+                servers_curr = load_servers()
+                if server_id in servers_curr and servers_curr[server_id].get('pid') == proc.pid:
+                    servers_curr[server_id]['status'] = 'stopped'
+                    servers_curr[server_id]['pid'] = None
+                    save_servers(servers_curr)
         
         threading.Thread(target=stream_output, daemon=True).start()
         return proc.pid, None
@@ -252,7 +255,7 @@ def stop_bot_process(pid):
 def get_process_stats(pid):
     try:
         proc = psutil.Process(pid)
-        cpu = proc.cpu_percent(interval=0.2)
+        cpu = proc.cpu_percent(interval=0.1)
         mem = proc.memory_info()
         ram = mem.rss / (1024 * 1024)
         return {
@@ -263,7 +266,7 @@ def get_process_stats(pid):
         return {'cpu_percent': 0, 'ram_display': '0 MB'}
 
 # ============================================
-# পেজ রাউটস (Page Routes)
+# পেজ রাউটস
 # ============================================
 
 @app.route('/')
@@ -280,8 +283,6 @@ def server_panel(server_id):
         servers[server_id] = {
             'server_id': server_id,
             'type': 'python',
-            'ram': '1GB',
-            'disk': '1GB',
             'status': 'stopped',
             'pid': None,
             'created': str(datetime.now()),
@@ -296,11 +297,10 @@ def server_panel(server_id):
     return render_template('home.html', current_server=servers[server_id])
 
 # ============================================
-# বট কন্ট্রোল API (Process Control)
+# বট কন্ট্রোল API
 # ============================================
 
 @app.route('/api/start/<server_id>', methods=['POST'])
-@app.route('/api/run/<server_id>', methods=['POST'])
 def api_start_server(server_id):
     servers = load_servers()
     server = servers.get(server_id)
@@ -357,11 +357,10 @@ def api_restart(server_id):
 @app.route('/api/logs/<server_id>')
 def api_logs(server_id):
     log_file = os.path.join(get_server_dir(server_id), 'output.log')
+    logs = ""
     if os.path.exists(log_file):
         with open(log_file, 'r', encoding='utf-8', errors='replace') as f:
             logs = f.read()
-    else: 
-        logs = ""
     return jsonify({'logs': logs, 'output': logs})
 
 @app.route('/api/clear_logs/<server_id>', methods=['POST'])
@@ -377,20 +376,27 @@ def api_clear_logs(server_id):
 @app.route('/api/command', methods=['POST'])
 def api_command():
     data = request.get_json() or {}
-    cmd = data.get('cmd', '')
+    cmd = data.get('cmd', '').strip()
     server_id = data.get('server_id', 'default')
     log_file = os.path.join(get_server_dir(server_id), 'output.log')
     
+    if not cmd:
+        return jsonify({'status': 'error', 'message': 'Empty command'}), 400
+
+    # প্রসেস রানিং থাকলে stdin-এ পাঠানো
     if server_id in RUNNING_PROCESSES:
         proc = RUNNING_PROCESSES[server_id]
         if proc.poll() is None:
             try:
                 proc.stdin.write(cmd + "\n")
                 proc.stdin.flush()
-                return jsonify({'status': 'success', 'output': f'Sent input: {cmd}\n'})
+                with open(log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"\n\033[96m> [Input]: {cmd}\033[0m\n")
+                return jsonify({'status': 'success', 'output': f'Sent input: {cmd}'})
             except Exception as e:
                 return jsonify({'status': 'error', 'message': str(e)})
 
+    # প্রসেস রানিং না থাকলে শেল কমান্ড হিসেবে রান করা
     try:
         result = subprocess.run(
             cmd, shell=True, capture_output=True, text=True,
@@ -412,15 +418,25 @@ def api_stats(server_id):
         return jsonify({'cpu': '0%', 'ram': '0 MB', 'status': 'stopped'})
     
     cpu, ram = "0%", "0 MB"
-    if server.get('status') == 'running' and server.get('pid'):
-        stats = get_process_stats(server['pid'])
-        cpu = f"{stats['cpu_percent']}%"
-        ram = stats['ram_display']
+    status = server.get('status', 'stopped')
+    pid = server.get('pid')
+
+    if status == 'running' and pid:
+        if psutil.pid_exists(pid):
+            stats = get_process_stats(pid)
+            cpu = f"{stats['cpu_percent']}%"
+            ram = stats['ram_display']
+        else:
+            # PID মারা গেছে কিন্তু স্ট্যাটাস রানিং রয়ে গেছে
+            server['status'] = 'stopped'
+            server['pid'] = None
+            save_servers(servers)
+            status = 'stopped'
     
-    return jsonify({'cpu': cpu, 'ram': ram, 'status': server.get('status', 'stopped')})
+    return jsonify({'cpu': cpu, 'ram': ram, 'status': status})
 
 # ============================================
-# ফাইল ম্যানেজার API (File Operations)
+# ফাইল ম্যানেজার API
 # ============================================
 
 def format_file_size(size_bytes):
@@ -469,6 +485,18 @@ def api_get_file(server_id):
             return jsonify({'error': str(e)}), 500
     return jsonify({'error': 'File not found'}), 404
 
+# সরাসরি আসল ফাইল ডাউনলোড রুট (Binary safe)
+@app.route('/api/download/<server_id>')
+def api_download_file(server_id):
+    file_rel_path = request.args.get('path', '')
+    server_dir = get_server_dir(server_id)
+    filepath = os.path.normpath(os.path.join(server_dir, file_rel_path.lstrip('/\\')))
+    if os.path.exists(filepath) and os.path.isfile(filepath):
+        directory = os.path.dirname(filepath)
+        filename = os.path.basename(filepath)
+        return send_from_directory(directory, filename, as_attachment=True)
+    return jsonify({'error': 'File not found'}), 404
+
 @app.route('/api/file/<server_id>', methods=['POST'])
 def api_save_file(server_id):
     data = request.get_json() or {}
@@ -510,7 +538,7 @@ def api_upload(server_id):
 @app.route('/api/create_folder/<server_id>', methods=['POST'])
 def api_create_folder(server_id):
     data = request.get_json() or {}
-    folder_rel = data.get('path', '') or data.get('folder_name', '') or data.get('foldername', '')
+    folder_rel = data.get('path', '') or data.get('folder_name', '')
     target = os.path.normpath(os.path.join(get_server_dir(server_id), folder_rel.lstrip('/\\')))
     os.makedirs(target, exist_ok=True)
     return jsonify({'success': True, 'message': 'Folder created'})
@@ -519,8 +547,8 @@ def api_create_folder(server_id):
 def api_rename(server_id):
     d = request.get_json() or {}
     server_dir = get_server_dir(server_id)
-    old_rel = d.get('old_path', '') or d.get('old_name', '')
-    new_rel = d.get('new_path', '') or d.get('new_name', '')
+    old_rel = d.get('old_path', '')
+    new_rel = d.get('new_path', '')
     old_path = os.path.normpath(os.path.join(server_dir, old_rel.lstrip('/\\')))
     new_path = os.path.normpath(os.path.join(server_dir, new_rel.lstrip('/\\')))
     
@@ -531,11 +559,10 @@ def api_rename(server_id):
     return jsonify({'error': 'Not found'}), 404
 
 @app.route('/api/extract/<server_id>', methods=['POST'])
-@app.route('/api/unzip/<server_id>', methods=['POST'])
 def api_extract(server_id):
     data = request.get_json() or {}
-    file_rel = data.get('file_path', '') or data.get('path', '') or data.get('filename', '')
-    target_rel = data.get('target_path', '') or data.get('target', '')
+    file_rel = data.get('file_path', '') or data.get('path', '')
+    target_rel = data.get('target_path', '')
     server_dir = get_server_dir(server_id)
     
     zip_path = os.path.normpath(os.path.join(server_dir, file_rel.lstrip('/\\')))
@@ -556,8 +583,7 @@ def api_get_startup(server_id):
     server = servers.get(server_id, {})
     return jsonify({
         'main_file': server.get('main_file', 'main.py'), 
-        'req_file': server.get('requirements_file', 'requirements.txt'),
-        'requirements_file': server.get('requirements_file', 'requirements.txt')
+        'req_file': server.get('requirements_file', 'requirements.txt')
     })
 
 @app.route('/api/set_startup/<server_id>', methods=['POST'])
@@ -566,7 +592,7 @@ def api_set_startup(server_id):
     servers = load_servers()
     if server_id in servers:
         servers[server_id]['main_file'] = d.get('main_file', 'main.py')
-        servers[server_id]['requirements_file'] = d.get('req_file') or d.get('requirements_file', 'requirements.txt')
+        servers[server_id]['requirements_file'] = d.get('req_file', 'requirements.txt')
         save_servers(servers)
         return jsonify({'success': True, 'message': 'Startup config saved'})
     return jsonify({'error': 'Not found'}), 404
@@ -590,7 +616,9 @@ def api_github_deploy(server_id):
     
     def deploy_thread():
         try:
-            import requests
+            import urllib.request
+            import io
+            
             def deploy_log(msg):
                 with open(log_file, 'a', encoding='utf-8') as f:
                     f.write(f"[{datetime.now().strftime('%I:%M:%S %p')}] {msg}\n")
@@ -601,33 +629,28 @@ def api_github_deploy(server_id):
             branch = parts[3] if len(parts) > 3 and parts[2] == 'tree' else 'main'
             
             api_url = f"https://api.github.com/repos/{owner}/{repo}/zipball/{branch}"
-            headers = {'Accept': 'application/vnd.github.v3+json'}
+            headers = {'User-Agent': 'Mozilla/5.0'}
             if is_private and access_token:
                 headers['Authorization'] = f'token {access_token}'
             
-            response = requests.get(api_url, headers=headers, stream=True, timeout=60)
-            if response.status_code == 200:
-                temp_zip = os.path.join(server_dir, '_github_temp.zip')
-                with open(temp_zip, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                with zipfile.ZipFile(temp_zip, 'r') as zf:
-                    for member in zf.namelist():
-                        relative_path = '/'.join(member.split('/')[1:])
-                        if not relative_path: 
-                            continue
-                        target_path = os.path.join(server_dir, relative_path)
-                        if member.endswith('/'):
-                            os.makedirs(target_path, exist_ok=True)
-                        else:
-                            os.makedirs(os.path.dirname(target_path), exist_ok=True)
-                            with zf.open(member) as source, open(target_path, 'wb') as target:
-                                shutil.copyfileobj(source, target)
-                if os.path.exists(temp_zip): 
-                    os.remove(temp_zip)
-                deploy_log("Deployment completed successfully!")
-            else:
-                deploy_log(f"GitHub Error: HTTP {response.status_code}")
+            deploy_log(f"Downloading from {owner}/{repo} (branch: {branch})...")
+            req = urllib.request.Request(api_url, headers=headers)
+            with urllib.request.urlopen(req) as response:
+                zip_data = response.read()
+            
+            with zipfile.ZipFile(io.BytesIO(zip_data)) as zf:
+                for member in zf.namelist():
+                    relative_path = '/'.join(member.split('/')[1:])
+                    if not relative_path: 
+                        continue
+                    target_path = os.path.join(server_dir, relative_path)
+                    if member.endswith('/'):
+                        os.makedirs(target_path, exist_ok=True)
+                    else:
+                        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+                        with zf.open(member) as source, open(target_path, 'wb') as target:
+                            shutil.copyfileobj(source, target)
+            deploy_log("Deployment completed successfully!")
         except Exception as e:
             deploy_log(f"Deployment Error: {str(e)}")
             
