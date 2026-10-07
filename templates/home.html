@@ -157,7 +157,7 @@
       font-size: 9.5px;
       line-height: 1.6;
       color: #cbd5e1;
-      height: 480px;
+      height: 485px;
       overflow-y: auto;
       white-space: pre-wrap;
       word-break: break-all;
@@ -1097,34 +1097,23 @@
       }
     };
 
-    /* TERMINAL CLEAR ACTION */
+    /* TERMINAL CLEAR ACTION (সার্ভার সহ ফাইল ক্লিন করবে) */
     const terminalActions = {
-      clear() {
-        terminalEl.innerHTML = "";
-        lastLogText = "";
-        showToast("Terminal Cleared");
+      async clear() {
+        try {
+          // ১. স্ক্রিন ফাঁকা করা
+          terminalEl.innerHTML = "";
+          lastLogText = "";
+          
+          // ২. পাইথন সার্ভারের মূল output.log ফাইলটি ডিলিট/ক্লিন করা
+          await api.post(`/api/clear_logs/${CONFIG.SERVER_ID}`);
+          
+          showToast("Terminal & Logs Cleared");
+        } catch (err) {
+          showToast("Clear Failed: " + err.message);
+        }
       }
     };
-
-    /* REALTIME LOGS */
-    let lastLogText = "";
-    const terminalEl = document.getElementById("detail-recent-logs");
-
-    async function pollLogs() {
-      try {
-        const res = await api.get(`/api/logs/${CONFIG.SERVER_ID}`);
-        let rawLogs = typeof res === "string" ? res : (res.logs || res.output || "");
-        if (rawLogs && rawLogs !== lastLogText) {
-          if (rawLogs.includes('\x1b[2J') || rawLogs.includes('[H[2J')) {
-            let parts = rawLogs.split(/\x1b\[2J|\[H\[2J/);
-            rawLogs = parts[parts.length - 1];
-          }
-          terminalEl.innerHTML = ansiUp.ansi_to_html(rawLogs);
-          terminalEl.scrollTop = terminalEl.scrollHeight;
-          lastLogText = rawLogs;
-        }
-      } catch (e) {}
-    }
 
     /* COMMAND CONTROLLER */
     const commandController = {
