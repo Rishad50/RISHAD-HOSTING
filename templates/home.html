@@ -45,7 +45,6 @@
     body {
       font-family: var(--font-sans);
       background-color: var(--bg);
-      /* স্ক্রিনের চারপাশে সুন্দর মার্জিন এবং নিচের অতিরিক্ত ফাঁকা জায়গা বাদ দেওয়া হয়েছে */
       padding: 0.75rem 0.5rem calc(var(--nav-height) + 0.4rem + env(safe-area-inset-bottom, 0px));
       display: flex;
       justify-content: center;
@@ -73,14 +72,14 @@
       100% { opacity: 1; transform: translateY(0); }
     }
 
-    /* SERVER CONTROLS CARD (দুই পাশের অতিরিক্ত প্যাডিং একদম দূর করা হয়েছে) */
+    /* SERVER CONTROLS CARD */
     .server-controls-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 5px; /* একদম টাইট ও পারফেক্ট প্যাডিং */
+      padding: 5px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.65rem;
     }
     
     .control-buttons-grid {
@@ -146,18 +145,18 @@
     .btn-ctrl-restart { background-color: var(--btn-restart); }
     .btn-ctrl-clear { background-color: var(--btn-clear); }
 
-    /* TERMINAL CARD */
+    /* TERMINAL CARD (টপ স্পেস একদম কমিয়ে আনা হয়েছে) */
     .terminal-card {
       background: #09101d;
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
       border: 1px solid #152238;
-      padding: 1rem;
+      padding: 0.45rem 0.75rem; /* উপরে অতিরিক্ত খালি জায়গা থাকবে না */
       font-family: var(--font-mono);
       font-size: 9.5px;
-      line-height: 1.6;
+      line-height: 1.5;
       color: #cbd5e1;
-      height: 485px;
+      height: 489px;
       overflow-y: auto;
       white-space: pre-wrap;
       word-break: break-all;
@@ -798,7 +797,7 @@
     <!-- VIEW 1: HOME TAB -->
     <div id="tab-home" class="tab-content active" role="tabpanel" aria-labelledby="nav-btn-home">
       
-      <!-- 1. SERVER CONTROLS CARD (পুরো কার্ড জুড়ে সমানভাবে ফিট করা ৪টি বাটন) -->
+      <!-- 1. SERVER CONTROLS CARD -->
       <div class="server-controls-card">
         <div class="control-buttons-grid">
           <button id="btn-detail-start" class="btn-control btn-ctrl-start" onclick="serverActions.start()">
@@ -1097,13 +1096,12 @@
       }
     };
 
-    /* TERMINAL CLEAR ACTION (সার্ভারের আসল output.log ফাইল ক্লিয়ার করবে) */
+    /* TERMINAL CLEAR ACTION */
     const terminalActions = {
       async clear() {
         try {
           terminalEl.innerHTML = "";
           lastLogText = "";
-          // পাইথনের /api/clear_logs/<server_id> কল করে ফাইল ক্লিন করা
           await api.post(`/api/clear_logs/${CONFIG.SERVER_ID}`);
           showToast("Terminal & Logs Cleared");
         } catch (err) {
@@ -1112,7 +1110,7 @@
       }
     };
 
-    /* REALTIME LOGS */
+    /* REALTIME LOGS (শুরুর অতিরিক্ত ফাঁকা লাইন বাদে একদম টপ থেকে শুরু হবে) */
     let lastLogText = "";
     const terminalEl = document.getElementById("detail-recent-logs");
 
@@ -1125,7 +1123,8 @@
             let parts = rawLogs.split(/\x1b\[2J|\[H\[2J/);
             rawLogs = parts[parts.length - 1];
           }
-          terminalEl.innerHTML = rawLogs ? ansiUp.ansi_to_html(rawLogs) : "";
+          let cleanLogs = rawLogs ? rawLogs.trimStart() : "";
+          terminalEl.innerHTML = cleanLogs ? ansiUp.ansi_to_html(cleanLogs) : "";
           terminalEl.scrollTop = terminalEl.scrollHeight;
           lastLogText = rawLogs;
         }
