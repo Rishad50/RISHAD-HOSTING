@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>Server Manager - All Servers</title>
+  
+  <!-- FontAwesome 6 CDN -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      --text-dark: #0f172a;
+      --text-muted: #64748b;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-light: #eff6ff;
+      --success: #10b981;
+      --danger: #ef4444;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg);
+      padding: 1.15rem 0.85rem 2rem;
+      display: flex;
+      justify-content: center;
+      color: var(--text-dark);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    /* HEADER */
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .header-title-box h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-dark);
+      letter-spacing: -0.02em;
+    }
+
+    .header-title-box p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .btn-create-server {
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      padding: 0.6rem 0.95rem;
+      font-size: 0.825rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .btn-create-server:active {
+      transform: scale(0.97);
+      background-color: var(--primary-hover);
+    }
+
+    /* STATS SUMMARY BAR */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem 0.5rem;
+      text-align: center;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+    }
+
+    .stat-number {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-dark);
+    }
+
+    .stat-label {
+      font-size: 0.68rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    /* SERVERS LIST */
+    .section-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.75rem;
+    }
+
+    .servers-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .server-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .server-card:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .server-identity {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      overflow: hidden;
+    }
+
+    .server-icon-box {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: var(--primary-light);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .server-info {
+      overflow: hidden;
+    }
+
+    .server-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .server-sub {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 0.1rem;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 0.25rem 0.55rem;
+      border-radius: 20px;
+      flex-shrink: 0;
+    }
+
+    .badge-running {
+      background: #ecfdf5;
+      color: var(--success);
+      border: 1px solid #a7f3d0;
+    }
+
+    .badge-stopped {
+      background: #f1f5f9;
+      color: var(--text-muted);
+      border: 1px solid #e2e8f0;
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .badge-running .status-dot {
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .card-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .server-specs {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      display: flex;
+      gap: 0.65rem;
+    }
+
+    .card-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .btn-action-manage {
+      background: var(--primary-light);
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.15s;
+    }
+
+    .btn-action-manage:hover {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-action-delete {
+      background: #fee2e2;
+      color: var(--danger);
+      border: none;
+      font-size: 0.78rem;
+      padding: 0.4rem 0.65rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-action-delete:hover {
+      background: var(--danger);
+      color: #ffffff;
+    }
+
+    /* EMPTY STATE */
+    .empty-state {
+      background: var(--card-bg);
+      border: 1px dashed var(--border);
+      border-radius: 14px;
+      padding: 3rem 1rem;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .empty-icon {
+      font-size: 2.2rem;
+      color: #cbd5e1;
+      margin-bottom: 0.65rem;
+    }
+
+    /* MODAL */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(3px);
+      z-index: 1200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-card {
+      background: #ffffff;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 380px;
+      padding: 1.25rem;
+      transform: scale(0.95);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-backdrop.open .modal-card {
+      transform: scale(1);
+    }
+
+    .modal-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    .modal-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+    }
+
+    .modal-input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.85rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      outline: none;
+      margin-bottom: 1.15rem;
+    }
+
+    .modal-input:focus {
+      border-color: var(--primary);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    .btn-modal {
+      padding: 0.5rem 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-modal-cancel { background: #f1f5f9; color: var(--text-muted); }
+    .btn-modal-submit { background: var(--primary); color: #fff; }
+
+    /* TOAST */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(30px);
+      background: #0f172a;
+      color: #fff;
+      padding: 0.55rem 1.15rem;
+      border-radius: 30px;
+      font-size: 0.8rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s;
+      z-index: 1300;
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      visibility: visible;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- DASHBOARD HEADER -->
+    <div class="dashboard-header">
+      <div class="header-title-box">
+        <h1>My Servers</h1>
+        <p>Manage all your bot servers</p>
+      </div>
+      <button class="btn-create-server" onclick="serverDashboard.openCreateModal()">
+        <i class="fa-solid fa-plus"></i>
+        <span>New Server</span>
+      </button>
+    </div>
+
+    <!-- STATS BAR -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-total">0</div>
+        <div class="stat-label">Total Servers</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color: var(--success);" id="stat-running">0</div>
+        <div class="stat-label">Active / Running</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" style="color: var(--text-muted);" id="stat-stopped">0</div>
+        <div class="stat-label">Stopped</div>
+      </div>
+    </div>
+
+    <!-- SERVERS LIST -->
+    <div class="section-title">All Instances</div>
+    <div class="servers-list" id="servers-container">
+      <div class="empty-state">
+        <div class="empty-icon"><i class="fa-solid fa-server"></i></div>
+        <div>Loading servers...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- MODAL: CREATE SERVER -->
+  <div class="modal-backdrop" id="create-modal">
+    <div class="modal-card">
+      <div class="modal-title">Create New Server</div>
+      <div class="modal-desc">Enter a name for your new server instance:</div>
+      <input type="text" id="new-server-name" class="modal-input" placeholder="e.g. Telegram Bot 2" autocomplete="off" />
+      <div class="modal-actions">
+        <button class="btn-modal btn-modal-cancel" onclick="serverDashboard.closeCreateModal()">Cancel</button>
+        <button class="btn-modal btn-modal-submit" onclick="serverDashboard.submitCreate()">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast">Notification</div>
+
+  <script>
+    "use strict";
+
+    function showToast(msg) {
+      const toastEl = document.getElementById('toast');
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      setTimeout(() => toastEl.classList.remove('show'), 2500);
+    }
+
+    const serverDashboard = {
+      servers: [],
+
+      async loadServers() {
+        const container = document.getElementById('servers-container');
+        try {
+          const res = await fetch('/api/servers');
+          const data = await res.json();
+          this.servers = data.servers || [];
+          this.render();
+        } catch (err) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon"><i class="fa-solid fa-triangle-exclamation"></i></div>
+              <div>Failed to load servers: ${err.message}</div>
+            </div>
+          `;
+        }
+      },
+
+      render() {
+        const container = document.getElementById('servers-container');
+        const total = this.servers.length;
+        const running = this.servers.filter(s => s.status === 'running').length;
+        const stopped = total - running;
+
+        document.getElementById('stat-total').textContent = total;
+        document.getElementById('stat-running').textContent = running;
+        document.getElementById('stat-stopped').textContent = stopped;
+
+        if (total === 0) {
+          container.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon"><i class="fa-solid fa-box-open"></i></div>
+              <div>No servers created yet! Click "+ New Server" to get started.</div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = "";
+        this.servers.forEach(srv => {
+          const isRunning = srv.status === 'running';
+          const card = document.createElement('div');
+          card.className = "server-card";
+          card.innerHTML = `
+            <div class="card-top">
+              <div class="server-identity">
+                <div class="server-icon-box">
+                  <i class="fa-brands fa-python"></i>
+                </div>
+                <div class="server-info">
+                  <div class="server-title">${srv.name}</div>
+                  <div class="server-sub">ID: ${srv.server_id}</div>
+                </div>
+              </div>
+              <div class="status-badge ${isRunning ? 'badge-running' : 'badge-stopped'}">
+                <span class="status-dot"></span>
+                <span>${isRunning ? 'Running' : 'Stopped'}</span>
+              </div>
+            </div>
+
+            <div class="card-bottom">
+              <div class="server-specs">
+                <span><i class="fa-solid fa-microchip"></i> 1GB RAM</span>
+                <span><i class="fa-solid fa-hard-drive"></i> 1GB Disk</span>
+              </div>
+              <div class="card-actions">
+                <a href="/${srv.server_id}" class="btn-action-manage">
+                  <i class="fa-solid fa-terminal"></i>
+                  <span>Manage</span>
+                </a>
+                ${srv.server_id !== 'default' ? `
+                  <button class="btn-action-delete" onclick="serverDashboard.deleteServer('${srv.server_id}')" title="Delete Server">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      },
+
+      openCreateModal() {
+        document.getElementById('new-server-name').value = '';
+        document.getElementById('create-modal').classList.add('open');
+        setTimeout(() => document.getElementById('new-server-name').focus(), 50);
+      },
+
+      closeCreateModal() {
+        document.getElementById('create-modal').classList.remove('open');
+      },
+
+      async submitCreate() {
+        const name = document.getElementById('new-server-name').value.trim();
+        if (!name) return showToast("Please enter a server name!");
+
+        try {
+          const res = await fetch('/api/create_server', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || 'Creation failed');
+          
+          showToast("Server created successfully!");
+          this.closeCreateModal();
+          this.loadServers();
+        } catch (err) {
+          showToast(err.message);
+        }
+      },
+
+      async deleteServer(serverId) {
+        if (!confirm(`Are you sure you want to delete server "${serverId}"? All files will be removed!`)) return;
+        try {
+          const res = await fetch(`/api/delete_server/${serverId}`, { method: 'DELETE' });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.message || 'Delete failed');
+
+          showToast("Server deleted!");
+          this.loadServers();
+        } catch (err) {
+          showToast(err.message);
+        }
+      }
+    };
+
+    document.addEventListener("DOMContentLoaded", () => {
+      serverDashboard.loadServers();
+    });
+  </script>
+</body>
+</html>
