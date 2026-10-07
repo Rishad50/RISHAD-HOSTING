@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
-  <title>Control Panel - {{ current_server.server_id }}</title>
+  <title>Control Panel</title>
   
   <!-- FontAwesome 6 CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -19,6 +19,7 @@
       --border-light: #f1f5f9;
       --text-dark: #0f172a;
       --text-muted: #64748b;
+      --text-subtle: #94a3b8;
       --primary: #2563eb;
       --primary-hover: #1d4ed8;
       --primary-light: #eff6ff;
@@ -27,74 +28,78 @@
       --btn-restart: #2563eb;
       --danger: #ef4444;
       --danger-light: #fef2f2;
-      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
       --font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
+      
       --nav-height: 60px;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       font-family: var(--font-sans);
       background-color: var(--bg);
-      padding: 1.15rem 0.85rem calc(var(--nav-height) + 2.5rem);
+      padding: 1.15rem 0.85rem calc(var(--nav-height) + 2.5rem + env(safe-area-inset-bottom, 0px));
       display: flex;
       justify-content: center;
       color: var(--text-dark);
       -webkit-font-smoothing: antialiased;
     }
 
-    .container { width: 100%; max-width: 540px; }
+    .container {
+      width: 100%;
+      max-width: 520px;
+    }
 
-    .tab-content { display: none; animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
-    .tab-content.active { display: block; }
+    /* Tab Page Views */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .tab-content.active {
+      display: block;
+    }
 
     @keyframes fadeIn {
       0% { opacity: 0; transform: translateY(5px); }
       100% { opacity: 1; transform: translateY(0); }
     }
 
-    /* STATS HEADER */
-    .stats-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 0.85rem 1rem;
-      margin-bottom: 0.85rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    }
-    .server-name-badge { font-weight: 700; font-size: 0.95rem; color: #1e293b; display: flex; align-items: center; gap: 0.4rem; }
-    .status-badge {
-      font-size: 0.72rem;
-      padding: 0.2rem 0.6rem;
-      border-radius: 20px;
-      font-weight: 700;
-      text-transform: uppercase;
-      background: #e2e8f0;
-      color: #64748b;
-    }
-    .status-badge.running { background: #dcfce7; color: #15803d; }
-    .status-badge.stopped { background: #fee2e2; color: #b91c1c; }
-
-    .metrics { display: flex; gap: 1rem; font-size: 0.78rem; font-weight: 600; color: #64748b; }
-    .metrics span b { color: #0f172a; }
-
-    /* CONTROLS CARD */
+    /* SERVER CONTROLS CARD */
     .server-controls-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 14px;
-      padding: 1rem;
+      padding: 1.15rem;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-      margin-bottom: 0.85rem;
+      margin-bottom: 1.15rem;
     }
+    
+    .controls-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin-bottom: 0.2rem;
+    }
+    
+    .controls-subtitle {
+      font-size: 0.8rem;
+      color: #64748b;
+      margin-bottom: 1rem;
+    }
+    
     .control-buttons-grid {
       display: grid !important;
       grid-template-columns: repeat(3, 1fr) !important;
       gap: 0.6rem;
     }
+
     .btn-control {
       padding: 0.65rem 0.4rem;
       font-size: 0.875rem;
@@ -107,82 +112,72 @@
       align-items: center;
       justify-content: center;
       gap: 0.4rem;
+      white-space: nowrap;
+      outline: none !important;
+      -webkit-tap-highlight-color: transparent !important;
+      user-select: none;
       transition: all 0.15s ease;
     }
+
+    @media (hover: hover) {
+      .btn-control:hover:not(:disabled) {
+        opacity: 0.92;
+      }
+    }
+
+    .btn-control:active:not(:disabled) {
+      transform: scale(0.96);
+      opacity: 0.9;
+    }
+
+    .ctrl-icon {
+      width: 13px;
+      height: 13px;
+      fill: currentColor;
+      stroke: currentColor;
+      stroke-width: 0;
+      flex-shrink: 0;
+    }
+
+    .btn-ctrl-restart .ctrl-icon {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.5;
+    }
+    
     .btn-ctrl-start { background-color: var(--btn-start); }
     .btn-ctrl-stop { background-color: var(--btn-stop); }
     .btn-ctrl-restart { background-color: var(--btn-restart); }
 
-    /* TERMINAL CARD & INPUT */
-    .terminal-container {
+    /* TERMINAL CARD */
+    .terminal-card {
       background: #09101d;
       border-radius: 14px;
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
       border: 1px solid #152238;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-    }
-    .terminal-header {
-      background: #0f172a;
-      padding: 0.5rem 0.85rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 1px solid #1e293b;
-      font-size: 0.75rem;
-      color: #94a3b8;
-    }
-    .btn-clear-term {
-      background: transparent;
-      border: 1px solid #334155;
-      color: #cbd5e1;
-      padding: 0.2rem 0.5rem;
-      border-radius: 5px;
-      cursor: pointer;
-      font-size: 0.7rem;
-    }
-    .terminal-card {
-      padding: 0.85rem;
+      padding: 1.15rem;
       font-family: var(--font-mono);
-      font-size: 9.5px;
+      font-size: 9px;
       line-height: 1.6;
       color: #cbd5e1;
-      height: 340px;
+      height: 380px;
       overflow-y: auto;
       white-space: pre-wrap;
       word-break: break-all;
-    }
-    .terminal-input-bar {
-      display: flex;
-      background: #0f172a;
-      border-top: 1px solid #1e293b;
-      padding: 0.4rem 0.6rem;
-      gap: 0.4rem;
-    }
-    .terminal-input {
-      flex: 1;
-      background: #1e293b;
-      border: 1px solid #334155;
-      color: #f8fafc;
-      font-family: var(--font-mono);
-      font-size: 0.8rem;
-      padding: 0.4rem 0.6rem;
-      border-radius: 6px;
-      outline: none;
-    }
-    .btn-send-cmd {
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 0.4rem 0.8rem;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 0.8rem;
-      font-weight: 600;
+      margin-bottom: 0.5rem;
+      scrollbar-width: thin;
+      scrollbar-color: #334155 transparent;
     }
 
-    /* FILE MANAGER */
+    .terminal-card::-webkit-scrollbar {
+      width: 5px;
+    }
+    .terminal-card::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+
+    /* FILE MANAGER CARD */
     .fm-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
@@ -191,503 +186,1287 @@
       box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
       position: relative;
     }
-    .fm-toolbar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem; margin-bottom: 0.85rem; }
+
+    .fm-toolbar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.45rem;
+      margin-bottom: 0.85rem;
+    }
+
     .fm-btn {
-      display: flex; align-items: center; justify-content: center; gap: 0.3rem;
-      padding: 0.55rem 0.25rem; font-size: 0.75rem; font-weight: 600;
-      border-radius: 8px; border: 1px solid transparent; cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.3rem;
+      padding: 0.55rem 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
-    .fm-btn-primary { background-color: var(--primary); color: #ffffff; }
-    .fm-btn-outline { background-color: #ffffff; border-color: #e2e8f0; color: var(--primary); }
-    .fm-list-box { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #ffffff; }
-    .fm-rows-wrap { max-height: 480px; overflow-y: auto; }
+
+    .fm-btn svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      stroke-width: 2.2;
+    }
+
+    .fm-btn-primary {
+      background-color: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 1px 3px rgba(37, 99, 235, 0.2);
+    }
+
+    .fm-btn-primary:active {
+      transform: scale(0.97);
+      background-color: var(--primary-hover);
+    }
+
+    .fm-btn-outline {
+      background-color: #ffffff;
+      border-color: #e2e8f0;
+      color: var(--primary);
+    }
+
+    .fm-btn-outline:active {
+      transform: scale(0.97);
+      background-color: #f8fafc;
+    }
+
+    @media (hover: hover) {
+      .fm-btn-primary:hover {
+        background-color: var(--primary-hover);
+      }
+      .fm-btn-outline:hover {
+        background-color: var(--primary-light);
+        border-color: #bfdbfe;
+      }
+    }
+
+    .fm-list-box {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #ffffff;
+    }
+
+    .fm-rows-wrap {
+      max-height: 480px;
+      overflow-y: auto;
+    }
+
     .fm-row {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0.65rem 0.85rem; border-bottom: 1px solid var(--border-light);
-      font-size: 0.82rem; cursor: pointer; position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.65rem 0.85rem;
+      border-bottom: 1px solid var(--border-light);
+      font-size: 0.82rem;
+      transition: background-color 0.12s ease;
+      cursor: pointer;
+      position: relative;
     }
-    .fm-name-col { display: flex; align-items: center; gap: 0.75rem; overflow: hidden; flex: 1; }
-    .fm-item-name { color: #1e293b; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .fm-row-menu-btn { width: 28px; height: 28px; border-radius: 6px; background: transparent; border: none; cursor: pointer; color: #94a3b8; }
+
+    .fm-row:last-child {
+      border-bottom: none;
+    }
+
+    .fm-row:hover {
+      background-color: #f8fafc;
+    }
+
+    .fm-row:active {
+      background-color: #f1f5f9;
+    }
+
+    .fm-name-col {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      overflow: hidden;
+      flex: 1;
+      min-width: 0;
+      padding-right: 0.5rem;
+    }
+
+    .fm-item-icon-box {
+      width: 22px;
+      height: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .fm-item-icon.folder {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      color: #2563eb;
+      fill: #2563eb;
+    }
+
+    .fm-item-name {
+      color: #1e293b;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: var(--font-sans);
+      font-size: 0.84rem;
+      letter-spacing: normal;
+    }
+
+    .fm-menu-col {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      flex-shrink: 0;
+    }
+
+    .fm-row-menu-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      transition: all 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .fm-row-menu-btn:hover {
+      background: #e2e8f0;
+      color: var(--text-dark);
+    }
+
+    .fm-row-menu-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* Action Dropdown Menu */
     .fm-dropdown-menu {
-      position: absolute; width: 144px; background: #ffffff; border: 1px solid var(--border);
-      border-radius: 10px; box-shadow: 0 10px 25px rgba(15,23,42,0.15); z-index: 1050; padding: 0.3rem; display: none;
+      position: absolute;
+      top: 100%;
+      right: 0.75rem;
+      width: 144px;
+      background: #ffffff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15), 0 8px 10px -6px rgba(15, 23, 42, 0.08);
+      z-index: 1050;
+      padding: 0.3rem;
+      display: none;
     }
-    .fm-dropdown-menu.show { display: block; }
+
+    .fm-dropdown-menu.show {
+      display: block;
+      animation: menuPop 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes menuPop {
+      0% { opacity: 0; transform: scale(0.95) translateY(-4px); }
+      100% { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
     .fm-dropdown-item {
-      display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.55rem;
-      font-size: 0.775rem; font-weight: 500; color: #334155; border-radius: 6px;
-      cursor: pointer; border: none; background: transparent; width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.45rem 0.55rem;
+      font-size: 0.775rem;
+      font-weight: 500;
+      color: #334155;
+      border-radius: 6px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      transition: background-color 0.1s ease, color 0.1s ease;
     }
-    .fm-dropdown-item:hover { background-color: #f1f5f9; color: var(--primary); }
-    .fm-dropdown-item.danger-item { color: var(--danger); }
 
-    /* FORMS & CARDS */
+    .fm-dropdown-item svg {
+      width: 14px;
+      height: 14px;
+      stroke-width: 2;
+      flex-shrink: 0;
+    }
+
+    .fm-dropdown-item:hover {
+      background-color: #f1f5f9;
+      color: var(--primary);
+    }
+
+    .fm-dropdown-item.danger-item {
+      color: var(--danger);
+    }
+
+    .fm-dropdown-item.danger-item:hover {
+      background-color: var(--danger-light);
+      color: #dc2626;
+    }
+
+    .fm-empty-state {
+      padding: 2.8rem 1rem;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.6rem;
+      color: #94a3b8;
+    }
+
+    .fm-empty-icon {
+      width: 40px;
+      height: 40px;
+      stroke-width: 1.5;
+      color: #cbd5e1;
+    }
+
+    .fm-empty-text {
+      font-size: 0.825rem;
+      font-weight: 500;
+      color: #64748b;
+    }
+
+    /* STARTUP CONFIGURATION CARD */
     .startup-card {
-      background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px;
-      padding: 1.15rem; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03); margin-bottom: 1rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.15rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
     }
-    .form-group { margin-bottom: 0.85rem; }
-    .form-label { display: block; font-size: 0.775rem; font-weight: 600; color: var(--text-dark); margin-bottom: 0.3rem; }
+
+    .form-group {
+      margin-bottom: 0.85rem;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.775rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      margin-bottom: 0.3rem;
+    }
+
     .form-input {
-      width: 100%; padding: 0.55rem 0.75rem; font-size: 0.825rem;
-      border: 1px solid var(--border); border-radius: 8px; outline: none; background: #f8fafc;
-    }
-    .btn-action-save {
-      width: 100%; padding: 0.6rem; background: var(--primary); color: #ffffff;
-      border: none; border-radius: 8px; font-weight: 600; font-size: 0.825rem; cursor: pointer;
+      width: 100%;
+      padding: 0.55rem 0.75rem;
+      font-size: 0.825rem;
+      font-family: var(--font-sans);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      outline: none;
+      background: #f8fafc;
+      transition: all 0.15s;
     }
 
-    /* MODALS & TOAST */
+    .form-input:focus {
+      background: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+    }
+
+    .btn-startup-save {
+      width: 100%;
+      padding: 0.6rem;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.825rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      transition: background-color 0.15s;
+    }
+
+    .btn-startup-save:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Modals */
     .fm-modal-backdrop {
-      position: fixed; inset: 0; background-color: rgba(15, 23, 42, 0.55);
-      backdrop-filter: blur(3px); z-index: 1200; display: flex; align-items: center;
-      justify-content: center; padding: 1rem; opacity: 0; visibility: hidden; transition: 0.2s;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(15, 23, 42, 0.55);
+      backdrop-filter: blur(3px);
+      z-index: 1200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.2s ease, visibility 0.2s ease;
     }
-    .fm-modal-backdrop.open { opacity: 1; visibility: visible; }
-    .fm-modal-card { background: #ffffff; border-radius: 14px; width: 100%; max-width: 380px; padding: 1.25rem; }
-    .fm-editor-textarea {
-      width: 100%; height: 280px; background-color: #09101d; color: #f1f5f9;
-      font-family: var(--font-mono); font-size: 0.8rem; padding: 0.85rem; border-radius: 8px;
-      border: 1px solid #1e293b; outline: none; margin-bottom: 1rem;
-    }
-    .fm-toast {
-      position: fixed; bottom: calc(var(--nav-height) + 20px); left: 50%;
-      transform: translateX(-50%) translateY(30px); background-color: #0f172a;
-      color: #ffffff; padding: 0.55rem 1.15rem; border-radius: 30px; font-size: 0.78rem;
-      opacity: 0; visibility: hidden; transition: all 0.25s; z-index: 1300;
-    }
-    .fm-toast.show { transform: translateX(-50%) translateY(0); opacity: 1; visibility: visible; }
 
-    /* FLOATING BOTTOM NAV */
+    .fm-modal-backdrop.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .fm-modal-card {
+      background: #ffffff;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 380px;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.06);
+      padding: 1.25rem;
+      transform: scale(0.95);
+      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .fm-modal-backdrop.open .fm-modal-card {
+      transform: scale(1);
+    }
+
+    .fm-modal-title {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      margin-bottom: 0.35rem;
+    }
+
+    .fm-modal-desc {
+      font-size: 0.775rem;
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      line-height: 1.4;
+    }
+
+    .fm-modal-input {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.85rem;
+      font-family: inherit;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      outline: none;
+      margin-bottom: 1.15rem;
+      transition: border-color 0.15s;
+    }
+
+    .fm-modal-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+    }
+
+    .fm-modal-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+    }
+
+    .fm-modal-btn {
+      padding: 0.5rem 0.9rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      border-radius: 7px;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .fm-modal-btn-cancel {
+      background: #f8fafc;
+      color: #475569;
+      border-color: var(--border);
+    }
+
+    .fm-modal-btn-cancel:hover { background: #f1f5f9; }
+
+    .fm-modal-btn-submit {
+      background: var(--primary);
+      color: #ffffff;
+    }
+
+    .fm-modal-btn-submit:hover { background: var(--primary-hover); }
+
+    .fm-modal-btn-danger {
+      background: var(--danger);
+      color: #ffffff;
+    }
+
+    .fm-modal-btn-danger:hover { background: #dc2626; }
+
+    /* Editor Modal */
+    .fm-editor-card {
+      max-width: 520px;
+    }
+
+    .fm-editor-textarea {
+      width: 100%;
+      height: 280px;
+      background-color: #09101d;
+      color: #f1f5f9;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      line-height: 1.5;
+      padding: 0.85rem;
+      border-radius: 8px;
+      border: 1px solid #1e293b;
+      outline: none;
+      resize: vertical;
+      margin-bottom: 1.1rem;
+      tab-size: 4;
+    }
+
+    .fm-editor-textarea:focus {
+      border-color: var(--primary);
+    }
+
+    /* Toast Notification */
+    .fm-toast {
+      position: fixed;
+      bottom: calc(var(--nav-height) + 32px + env(safe-area-inset-bottom, 0px));
+      left: 50%;
+      transform: translateX(-50%) translateY(30px);
+      background-color: #0f172a;
+      color: #ffffff;
+      padding: 0.55rem 1.15rem;
+      border-radius: 30px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1300;
+      white-space: nowrap;
+    }
+
+    .fm-toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* ===================================================
+       FLOATING BOTTOM NAVIGATION BAR
+       =================================================== */
     .bottom-nav {
-      position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
-      width: calc(100% - 1.7rem); max-width: 500px; height: var(--nav-height);
-      background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(16px);
-      border: 1px solid rgba(226, 232, 240, 0.9); border-radius: 20px;
-      display: flex; align-items: center; justify-content: space-around;
-      box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.12); z-index: 999;
+      position: fixed;
+      bottom: max(14px, env(safe-area-inset-bottom, 14px));
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 1.7rem);
+      max-width: 480px;
+      height: var(--nav-height);
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(226, 232, 240, 0.9);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      padding: 0 0.4rem;
+      box-shadow: 0 10px 25px -4px rgba(15, 23, 42, 0.12), 0 4px 12px rgba(15, 23, 42, 0.05);
+      z-index: 999;
     }
+
     .nav-btn {
-      flex: 1; height: 48px; display: flex; flex-direction: column; align-items: center;
-      justify-content: center; gap: 3px; background: transparent; border: none;
-      border-radius: 14px; cursor: pointer; color: #94a3b8; font-size: 0.7rem; font-weight: 600;
+      flex: 1;
+      max-width: 130px;
+      height: 48px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      background: transparent;
+      border: none;
+      border-radius: 14px;
+      outline: none;
+      cursor: pointer;
+      color: #94a3b8;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      -webkit-tap-highlight-color: transparent;
+      position: relative;
     }
-    .nav-btn.active { color: var(--primary); background-color: var(--primary-light); }
+
+    .nav-btn svg {
+      width: 20px;
+      height: 20px;
+      stroke-width: 2.1;
+      transition: all 0.2s ease;
+    }
+
+    .nav-btn:active {
+      transform: scale(0.92);
+    }
+
+    /* Active State (Pill effect only - Dot removed) */
+    .nav-btn.active {
+      color: var(--primary);
+      background-color: var(--primary-light);
+    }
+
+    .nav-btn.active svg {
+      stroke: var(--primary);
+      transform: translateY(-1px);
+    }
   </style>
 </head>
 <body>
 
   <div class="container">
     
-    <!-- STATS CARD -->
-    <div class="stats-card">
-      <div class="server-name-badge">
-        <i class="fa-solid fa-server" style="color: var(--primary)"></i>
-        <span>{{ current_server.server_id }}</span>
-        <span id="badge-status" class="status-badge stopped">Stopped</span>
-      </div>
-      <div class="metrics">
-        <span>CPU: <b id="stat-cpu">0%</b></span>
-        <span>RAM: <b id="stat-ram">0 MB</b></span>
-      </div>
-    </div>
-
     <!-- VIEW 1: HOME TAB -->
-    <div id="tab-home" class="tab-content active">
+    <div id="tab-home" class="tab-content active" role="tabpanel" aria-labelledby="nav-btn-home">
+      <!-- 1. SERVER CONTROLS CARD -->
       <div class="server-controls-card">
+        <div class="controls-title">Server Controls</div>
+        <div class="controls-subtitle">Start, stop or restart your server</div>
         <div class="control-buttons-grid">
-          <button class="btn-control btn-ctrl-start" onclick="serverActions.start()">
-            <i class="fa-solid fa-play"></i> <span>Start</span>
+          <button id="btn-detail-start" class="btn-control btn-ctrl-start" onclick="serverActions.start()">
+            <svg class="ctrl-icon" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>
+            <span>Start</span>
           </button>
-          <button class="btn-control btn-ctrl-stop" onclick="serverActions.stop()">
-            <i class="fa-solid fa-stop"></i> <span>Stop</span>
+          <button id="btn-detail-stop" class="btn-control btn-ctrl-stop" onclick="serverActions.stop()">
+            <svg class="ctrl-icon" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="1.5"></rect></svg>
+            <span>Stop</span>
           </button>
-          <button class="btn-control btn-ctrl-restart" onclick="serverActions.restart()">
-            <i class="fa-solid fa-rotate-right"></i> <span>Restart</span>
+          <button id="btn-detail-restart" class="btn-control btn-ctrl-restart" onclick="serverActions.restart()">
+            <svg class="ctrl-icon" viewBox="0 0 24 24"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+            <span>Restart</span>
           </button>
         </div>
       </div>
 
-      <div class="terminal-container">
-        <div class="terminal-header">
-          <span><i class="fa-solid fa-terminal"></i> Console Output</span>
-          <button class="btn-clear-term" onclick="serverActions.clearLogs()">Clear</button>
-        </div>
-        <div id="detail-recent-logs" class="terminal-card">Connecting to server logs...</div>
-        <form class="terminal-input-bar" onsubmit="serverActions.sendCommand(event)">
-          <input type="text" id="terminal-cmd-input" class="terminal-input" placeholder="Type command or input..." autocomplete="off" />
-          <button type="submit" class="btn-send-cmd">Send</button>
-        </form>
-      </div>
+      <!-- 2. TERMINAL WINDOW CARD -->
+      <div id="detail-recent-logs" class="terminal-card">Connecting to server logs...</div>
     </div>
 
     <!-- VIEW 2: FILE MANAGER TAB -->
-    <div id="tab-files" class="tab-content">
+    <div id="tab-files" class="tab-content" role="tabpanel" aria-labelledby="nav-btn-files">
       <div class="fm-card">
+        <!-- Action Toolbar: Upload, New Folder, New File -->
         <div class="fm-toolbar">
           <input type="file" id="fm-upload-input" multiple style="display: none;" onchange="fileManager.handleUpload(event)" />
-          <button class="fm-btn fm-btn-primary" onclick="document.getElementById('fm-upload-input').click()">
-            <i class="fa-solid fa-upload"></i> <span>Upload</span>
+          <button class="fm-btn fm-btn-primary" id="fm-btn-upload" onclick="document.getElementById('fm-upload-input').click()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <span>Upload</span>
           </button>
-          <button class="fm-btn fm-btn-outline" onclick="fileManager.openNewFolderModal()">
-            <i class="fa-solid fa-folder-plus"></i> <span>Folder</span>
+          <button class="fm-btn fm-btn-outline" id="fm-btn-new-folder" onclick="fileManager.openNewFolderModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>
+              <line x1="12" y1="11" x2="12" y2="17"></line>
+              <line x1="9" y1="14" x2="15" y2="14"></line>
+            </svg>
+            <span>New Folder</span>
           </button>
-          <button class="fm-btn fm-btn-outline" onclick="fileManager.openNewFileModal()">
-            <i class="fa-solid fa-file-circle-plus"></i> <span>File</span>
+          <button class="fm-btn fm-btn-outline" id="fm-btn-new-file" onclick="fileManager.openNewFileModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>New File</span>
           </button>
         </div>
 
+        <!-- File List Box -->
         <div class="fm-list-box">
           <div class="fm-rows-wrap" id="fm-rows-container">
-            <div style="padding: 2rem; text-align: center; color: #94a3b8;">Loading files...</div>
+            <div class="fm-empty-state">
+              <div class="fm-empty-text">Loading files...</div>
+            </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- VIEW 3: GITHUB DEPLOY TAB -->
-    <div id="tab-github" class="tab-content">
+    <!-- VIEW 3: STARTUP CONFIGURATION TAB -->
+    <div id="tab-startup" class="tab-content" role="tabpanel" aria-labelledby="nav-btn-startup">
       <div class="startup-card">
-        <h3 style="font-size: 1rem; margin-bottom: 0.3rem;">GitHub Auto Deploy</h3>
-        <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 1rem;">Deploy files directly from GitHub repository</p>
-        <form onsubmit="githubDeploy.start(event)">
+        <div class="controls-title" style="margin-bottom: 0.2rem;">Startup Configuration</div>
+        <div class="controls-subtitle">Python server entrypoint script and dependencies</div>
+        <form id="startup-form" onsubmit="startupConfig.save(event)">
           <div class="form-group">
-            <label class="form-label">Repository URL</label>
-            <input type="url" id="gh-repo-url" class="form-input" placeholder="https://github.com/user/repo" required />
-          </div>
-          <div class="form-group">
-            <label class="form-label">Personal Access Token (For Private Repos)</label>
-            <input type="password" id="gh-token" class="form-input" placeholder="ghp_xxxx (optional)" />
-          </div>
-          <button type="submit" class="btn-action-save"><i class="fa-solid fa-cloud-arrow-down"></i> Deploy from GitHub</button>
-        </form>
-        <div style="margin-top: 1rem;">
-          <div style="font-size: 0.75rem; font-weight: 600; margin-bottom: 0.3rem;">Deploy Logs:</div>
-          <pre id="gh-logs-box" style="background:#09101d; color:#cbd5e1; font-size:10px; padding:0.6rem; border-radius:8px; height:120px; overflow-y:auto;"></pre>
-        </div>
-      </div>
-    </div>
-
-    <!-- VIEW 4: STARTUP CONFIGURATION TAB -->
-    <div id="tab-startup" class="tab-content">
-      <div class="startup-card">
-        <h3 style="font-size: 1rem; margin-bottom: 0.3rem;">Startup Configuration</h3>
-        <p style="font-size: 0.78rem; color: #64748b; margin-bottom: 1rem;">Set python entrypoint script and dependencies</p>
-        <form onsubmit="startupConfig.save(event)">
-          <div class="form-group">
-            <label class="form-label">Main File</label>
+            <label class="form-label" for="startup-main-file">Main Entrypoint Script</label>
             <input type="text" id="startup-main-file" class="form-input" placeholder="main.py" required />
           </div>
           <div class="form-group">
-            <label class="form-label">Requirements File</label>
+            <label class="form-label" for="startup-req-file">Requirements File</label>
             <input type="text" id="startup-req-file" class="form-input" placeholder="requirements.txt" />
           </div>
-          <button type="submit" class="btn-action-save"><i class="fa-solid fa-floppy-disk"></i> Save Startup Config</button>
+          <button type="submit" class="btn-startup-save">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline></svg>
+            <span>Save Startup Config</span>
+          </button>
         </form>
       </div>
     </div>
 
   </div>
 
-  <!-- BOTTOM NAVIGATION BAR -->
-  <nav class="bottom-nav">
-    <button class="nav-btn active" onclick="nav.switch('home')" id="nav-btn-home">
-      <i class="fa-solid fa-house"></i> <span>Home</span>
+  <!-- FLOATING BOTTOM NAVIGATION BAR -->
+  <nav class="bottom-nav" role="tablist" aria-label="Main Navigation">
+    <button class="nav-btn active" role="tab" aria-selected="true" aria-controls="tab-home" onclick="nav.switch('home')" id="nav-btn-home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+      <span>Home</span>
     </button>
-    <button class="nav-btn" onclick="nav.switch('files')" id="nav-btn-files">
-      <i class="fa-solid fa-folder"></i> <span>Files</span>
+
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-files" onclick="nav.switch('files')" id="nav-btn-files">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+      </svg>
+      <span>Files</span>
     </button>
-    <button class="nav-btn" onclick="nav.switch('github')" id="nav-btn-github">
-      <i class="fa-brands fa-github"></i> <span>GitHub</span>
-    </button>
-    <button class="nav-btn" onclick="nav.switch('startup')" id="nav-btn-startup">
-      <i class="fa-solid fa-gear"></i> <span>Startup</span>
+
+    <button class="nav-btn" role="tab" aria-selected="false" aria-controls="tab-startup" onclick="nav.switch('startup')" id="nav-btn-startup">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="3"></circle>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+      </svg>
+      <span>Startup</span>
     </button>
   </nav>
 
-  <!-- DROPDOWN & MODALS -->
+  <!-- Shared Dropdown Action Menu -->
   <div class="fm-dropdown-menu" id="fm-dropdown"></div>
 
+  <!-- MODAL: New File / Folder / Rename -->
   <div class="fm-modal-backdrop" id="fm-prompt-modal">
     <div class="fm-modal-card">
-      <h4 id="fm-prompt-title" style="margin-bottom: 0.5rem;">New Item</h4>
-      <input type="text" id="fm-prompt-input" class="form-input" style="margin-bottom: 1rem;" />
-      <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
-        <button class="fm-btn fm-btn-outline" onclick="promptModal.classList.remove('open')">Cancel</button>
-        <button class="fm-btn fm-btn-primary" id="fm-prompt-confirm">Confirm</button>
+      <div class="fm-modal-title" id="fm-prompt-title">New Item</div>
+      <div class="fm-modal-desc" id="fm-prompt-desc">Enter the name:</div>
+      <input type="text" id="fm-prompt-input" class="fm-modal-input" placeholder="name" autocomplete="off" />
+      <div class="fm-modal-actions">
+        <button class="fm-modal-btn fm-modal-btn-cancel" id="fm-prompt-cancel">Cancel</button>
+        <button class="fm-modal-btn fm-modal-btn-submit" id="fm-prompt-confirm">Confirm</button>
       </div>
     </div>
   </div>
 
+  <!-- MODAL: Delete Confirmation -->
+  <div class="fm-modal-backdrop" id="fm-delete-modal">
+    <div class="fm-modal-card">
+      <div class="fm-modal-title">Delete Item</div>
+      <div class="fm-modal-desc" id="fm-delete-desc">Are you sure you want to delete this item? This action cannot be undone.</div>
+      <div class="fm-modal-actions">
+        <button class="fm-modal-btn fm-modal-btn-cancel" id="fm-delete-cancel">Cancel</button>
+        <button class="fm-modal-btn fm-modal-btn-danger" id="fm-delete-confirm">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: File Editor -->
   <div class="fm-modal-backdrop" id="fm-editor-modal">
-    <div class="fm-modal-card" style="max-width: 520px;">
-      <h4 id="fm-editor-filename" style="margin-bottom: 0.5rem;">Edit File</h4>
+    <div class="fm-modal-card fm-editor-card">
+      <div class="fm-modal-title" id="fm-editor-filename">Edit File</div>
+      <div class="fm-modal-desc">Modify file content and save changes.</div>
       <textarea id="fm-editor-content" class="fm-editor-textarea" spellcheck="false"></textarea>
-      <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
-        <button class="fm-btn fm-btn-outline" onclick="fileEditor.modal.classList.remove('open')">Cancel</button>
-        <button class="fm-btn fm-btn-primary" id="fm-editor-save">Save Changes</button>
+      <div class="fm-modal-actions">
+        <button class="fm-modal-btn fm-modal-btn-cancel" id="fm-editor-cancel">Cancel</button>
+        <button class="fm-modal-btn fm-modal-btn-submit" id="fm-editor-save">Save Changes</button>
       </div>
     </div>
   </div>
 
-  <div class="fm-toast" id="fm-toast">Saved</div>
+  <!-- Toast Notification -->
+  <div class="fm-toast" id="fm-toast">Changes saved</div>
 
+  <!-- JAVASCRIPT CONTROLLER -->
   <script>
     "use strict";
 
-    // Dynamic Server ID from Jinja2
     const CONFIG = {
-      SERVER_ID: "{{ current_server.server_id }}",
-      POLL_INTERVAL: 1500
+      SERVER_ID: "default",
+      LOGS_POLL_INTERVAL: 1500
     };
 
     const ansiUp = new AnsiUp();
 
+    /* NAVIGATION CONTROLLER */
     const nav = {
-      switch(tab) {
+      currentTab: 'home',
+      switch(tabName) {
+        this.currentTab = tabName;
+        
+        // Tab panels
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        document.getElementById(`tab-${tab}`).classList.add('active');
-        document.getElementById(`nav-btn-${tab}`).classList.add('active');
-        if (tab === 'files') fileManager.load();
-        if (tab === 'github') githubDeploy.pollLogs();
+        const targetView = document.getElementById(`tab-${tabName}`);
+        if (targetView) targetView.classList.add('active');
+
+        // Nav buttons & ARIA
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+          btn.classList.remove('active');
+          btn.setAttribute('aria-selected', 'false');
+        });
+
+        const targetBtn = document.getElementById(`nav-btn-${tabName}`);
+        if (targetBtn) {
+          targetBtn.classList.add('active');
+          targetBtn.setAttribute('aria-selected', 'true');
+        }
+
+        if (tabName === 'files') {
+          fileManager.load();
+        }
       }
     };
 
+    /* API CLIENT */
     const api = {
       async request(url, options = {}) {
-        const res = await fetch(url, { headers: { "Content-Type": "application/json" }, ...options });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(data.message || data.error || `HTTP ${res.status}`);
-        return data;
+        try {
+          const res = await fetch(url, {
+            headers: { "Content-Type": "application/json", ...(options.headers || {}) },
+            ...options
+          });
+          const contentType = res.headers.get("content-type");
+          let data = null;
+          if (contentType && contentType.includes("application/json")) {
+            data = await res.json();
+          } else {
+            data = { message: await res.text() };
+          }
+          if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
+          return data;
+        } catch (err) {
+          console.error("API error:", err.message);
+          throw err;
+        }
       },
       get(url) { return this.request(url, { method: "GET" }); },
       post(url, body) { return this.request(url, { method: "POST", body: JSON.stringify(body) }); },
-      delete(url, body) { return this.request(url, { method: "DELETE", body: JSON.stringify(body) }); }
-    };
-
-    function showToast(msg) {
-      const el = document.getElementById('fm-toast');
-      el.textContent = msg;
-      el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 2200);
-    }
-
-    const serverActions = {
-      async start() {
-        try { await api.post(`/api/start/${CONFIG.SERVER_ID}`); showToast("Server Started"); } 
-        catch (e) { showToast(e.message); }
-      },
-      async stop() {
-        try { await api.post(`/api/stop/${CONFIG.SERVER_ID}`); showToast("Server Stopped"); } 
-        catch (e) { showToast(e.message); }
-      },
-      async restart() {
-        try { await api.post(`/api/restart/${CONFIG.SERVER_ID}`); showToast("Restarting..."); } 
-        catch (e) { showToast(e.message); }
-      },
-      async clearLogs() {
-        try {
-          await api.post(`/api/clear_logs/${CONFIG.SERVER_ID}`);
-          document.getElementById('detail-recent-logs').innerHTML = "";
-          showToast("Logs Cleared");
-        } catch(e) { showToast(e.message); }
-      },
-      async sendCommand(e) {
-        e.preventDefault();
-        const input = document.getElementById('terminal-cmd-input');
-        const cmd = input.value.trim();
-        if (!cmd) return;
-        try {
-          await api.post(`/api/command`, { server_id: CONFIG.SERVER_ID, cmd });
-          input.value = "";
-        } catch (err) { showToast("Cmd failed: " + err.message); }
+      delete(url, body) { return this.request(url, { method: "DELETE", body: JSON.stringify(body) }); },
+      async upload(url, formData) {
+        const res = await fetch(url, { method: "POST", body: formData });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Upload failed");
+        return data;
       }
     };
 
-    let lastLogs = "";
-    async function updateDashboard() {
-      try {
-        // Logs
-        const logRes = await api.get(`/api/logs/${CONFIG.SERVER_ID}`);
-        const term = document.getElementById('detail-recent-logs');
-        if (logRes.logs && logRes.logs !== lastLogs) {
-          term.innerHTML = ansiUp.ansi_to_html(logRes.logs);
-          term.scrollTop = term.scrollHeight;
-          lastLogs = logRes.logs;
-        }
+    /* TOAST HELPER */
+    function showToast(msg) {
+      const toastEl = document.getElementById('fm-toast');
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      setTimeout(() => toastEl.classList.remove('show'), 2500);
+    }
 
-        // Stats
-        const stats = await api.get(`/api/stats/${CONFIG.SERVER_ID}`);
-        document.getElementById('stat-cpu').textContent = stats.cpu;
-        document.getElementById('stat-ram').textContent = stats.ram;
-        const badge = document.getElementById('badge-status');
-        badge.textContent = stats.status;
-        badge.className = `status-badge ${stats.status === 'running' ? 'running' : 'stopped'}`;
+    /* SVG ICONS */
+    const ICONS = {
+      more: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>',
+      edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>',
+      download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>',
+      trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>',
+      folderOpen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2"></path></svg>'
+    };
+
+    /* SERVER CONTROLS */
+    const serverActions = {
+      async start() {
+        try {
+          await api.post(`/api/start/${CONFIG.SERVER_ID}`);
+          showToast("Server Started Successfully");
+        } catch (err) { showToast("Start Failed: " + err.message); }
+      },
+      async stop() {
+        try {
+          await api.post(`/api/stop/${CONFIG.SERVER_ID}`);
+          showToast("Server Stopped");
+        } catch (err) { showToast("Stop Failed: " + err.message); }
+      },
+      async restart() {
+        try {
+          await api.post(`/api/restart/${CONFIG.SERVER_ID}`);
+          showToast("Server Restarting...");
+        } catch (err) { showToast("Restart Failed: " + err.message); }
+      }
+    };
+
+    /* REALTIME LOGS */
+    let lastLogText = "";
+    const terminalEl = document.getElementById("detail-recent-logs");
+
+    async function pollLogs() {
+      try {
+        const res = await api.get(`/api/logs/${CONFIG.SERVER_ID}`);
+        let rawLogs = typeof res === "string" ? res : (res.logs || res.output || "");
+        if (rawLogs && rawLogs !== lastLogText) {
+          if (rawLogs.includes('\x1b[2J') || rawLogs.includes('[H[2J')) {
+            let parts = rawLogs.split(/\x1b\[2J|\[H\[2J/);
+            rawLogs = parts[parts.length - 1];
+          }
+          terminalEl.innerHTML = ansiUp.ansi_to_html(rawLogs);
+          terminalEl.scrollTop = terminalEl.scrollHeight;
+          lastLogText = rawLogs;
+        }
       } catch (e) {}
     }
 
-    const promptModal = document.getElementById('fm-prompt-modal');
+    /* MODAL HELPERS */
     let promptCallback = null;
-    function openPrompt(title, defaultVal, cb) {
-      document.getElementById('fm-prompt-title').textContent = title;
-      const inp = document.getElementById('fm-prompt-input');
-      inp.value = defaultVal || '';
-      promptCallback = cb;
+    let deleteCallback = null;
+
+    const promptModal = document.getElementById('fm-prompt-modal');
+    const promptTitle = document.getElementById('fm-prompt-title');
+    const promptDesc = document.getElementById('fm-prompt-desc');
+    const promptInput = document.getElementById('fm-prompt-input');
+    const promptConfirmBtn = document.getElementById('fm-prompt-confirm');
+    const promptCancelBtn = document.getElementById('fm-prompt-cancel');
+
+    const deleteModal = document.getElementById('fm-delete-modal');
+    const deleteDesc = document.getElementById('fm-delete-desc');
+    const deleteConfirmBtn = document.getElementById('fm-delete-confirm');
+    const deleteCancelBtn = document.getElementById('fm-delete-cancel');
+
+    function openPromptModal(title, desc, defaultVal, confirmText, callback) {
+      promptTitle.textContent = title;
+      promptDesc.textContent = desc;
+      promptInput.value = defaultVal || '';
+      promptConfirmBtn.textContent = confirmText || 'Confirm';
+      promptCallback = callback;
       promptModal.classList.add('open');
-      inp.focus();
+      setTimeout(() => {
+        promptInput.focus();
+      }, 50);
     }
-    document.getElementById('fm-prompt-confirm').onclick = () => {
-      if (promptCallback) promptCallback(document.getElementById('fm-prompt-input').value.trim());
+
+    promptConfirmBtn.onclick = () => {
+      const val = promptInput.value.trim();
+      if (promptCallback) promptCallback(val);
       promptModal.classList.remove('open');
     };
 
+    promptCancelBtn.onclick = () => promptModal.classList.remove('open');
+    promptInput.onkeydown = (e) => {
+      if (e.key === 'Enter') promptConfirmBtn.click();
+      if (e.key === 'Escape') promptCancelBtn.click();
+    };
+
+    function openDeleteConfirmModal(titleName, callback) {
+      deleteDesc.textContent = `Are you sure you want to delete "${titleName}"? This action cannot be undone.`;
+      deleteCallback = callback;
+      deleteModal.classList.add('open');
+    }
+
+    deleteConfirmBtn.onclick = () => {
+      if (deleteCallback) deleteCallback();
+      deleteModal.classList.remove('open');
+    };
+
+    deleteCancelBtn.onclick = () => deleteModal.classList.remove('open');
+
+    /* FILE MANAGER */
     const fileManager = {
       currentPath: "",
+      currentFiles: [],
+
+      getFileIcon(filename, isDir, isZip) {
+        if (isDir) {
+          return `<svg class="fm-item-icon folder" viewBox="0 0 24 24"><path d="M2.5 6.5A2.5 2.5 0 0 1 5 4h3.6c.7 0 1.35.3 1.8.85l1.2 1.45c.45.55 1.1.85 1.8.85H19a2.5 2.5 0 0 1 2.5 2.5v7.8a2.5 2.5 0 0 1-2.5 2.5H5a2.5 2.5 0 0 1-2.5-2.5V6.5z"/></svg>`;
+        }
+        if (isZip || filename.endsWith('.zip')) {
+          return `<i class="fa-solid fa-file-zipper" style="color: #ec4899; font-size: 1.15rem;"></i>`;
+        }
+        if (filename.endsWith('.py')) {
+          return `<i class="fa-brands fa-python" style="color: #3b82f6; font-size: 1.2rem;"></i>`;
+        }
+        if (filename.endsWith('.json')) {
+          return `<i class="fa-solid fa-file-code" style="color: #10b981; font-size: 1.1rem;"></i>`;
+        }
+        if (filename.endsWith('.txt') || filename.endsWith('.md')) {
+          return `<i class="fa-solid fa-file-lines" style="color: #64748b; font-size: 1.15rem;"></i>`;
+        }
+        if (filename.endsWith('.sh')) {
+          return `<i class="fa-solid fa-terminal" style="color: #22c55e; font-size: 1.1rem;"></i>`;
+        }
+        return `<i class="fa-solid fa-file" style="color: #94a3b8; font-size: 1.15rem;"></i>`;
+      },
+
       async load(path = this.currentPath) {
         this.currentPath = path;
-        const cont = document.getElementById('fm-rows-container');
+        this.closeDropdown();
+
+        const container = document.getElementById("fm-rows-container");
+        container.innerHTML = `
+          <div class="fm-empty-state">
+            <div class="fm-empty-text">Loading directory...</div>
+          </div>
+        `;
+
         try {
-          const res = await api.get(`/api/files/${CONFIG.SERVER_ID}?path=${encodeURIComponent(path)}`);
-          cont.innerHTML = "";
-          if (this.currentPath) {
-            const up = document.createElement('div');
-            up.className = "fm-row";
-            up.innerHTML = `<div class="fm-name-col"><i class="fa-solid fa-arrow-turn-up" style="color:var(--primary)"></i> <b>.. (Back)</b></div>`;
-            up.onclick = () => {
-              const p = this.currentPath.split('/').filter(Boolean);
-              p.pop();
-              this.load(p.join('/'));
+          const res = await api.get(`/api/files/${CONFIG.SERVER_ID}?path=${encodeURIComponent(this.currentPath)}`);
+          let files = res.files || [];
+          this.currentFiles = files;
+          container.innerHTML = "";
+
+          files.sort((a, b) => {
+            const aDir = a.is_dir ? 1 : 0;
+            const bDir = b.is_dir ? 1 : 0;
+            if (aDir === bDir) return a.name.localeCompare(b.name);
+            return bDir - aDir;
+          });
+
+          if (this.currentPath !== "") {
+            const upRow = document.createElement("div");
+            upRow.className = "fm-row";
+            upRow.innerHTML = `
+              <div class="fm-name-col">
+                <span class="fm-item-icon-box" style="color: var(--primary); font-size: 1.1rem;">↵</span>
+                <span class="fm-item-name" style="color: var(--primary); font-weight: 600;">.. (Up)</span>
+              </div>
+            `;
+            upRow.onclick = () => {
+              const parts = this.currentPath.split("/").filter(Boolean);
+              parts.pop();
+              this.load(parts.join("/"));
             };
-            cont.appendChild(up);
+            container.appendChild(upRow);
           }
-          (res.files || []).forEach(f => {
-            const fullPath = this.currentPath ? `${this.currentPath}/${f.name}` : f.name;
-            const row = document.createElement('div');
+
+          if (files.length === 0) {
+            container.innerHTML += `
+              <div class="fm-empty-state">
+                <svg class="fm-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>
+                </svg>
+                <div class="fm-empty-text">No files in this folder</div>
+              </div>
+            `;
+            return;
+          }
+
+          files.forEach(item => {
+            const isDir = Boolean(item.is_dir);
+            const isZip = item.name.endsWith('.zip');
+            const fullPath = this.currentPath ? `${this.currentPath}/${item.name}` : item.name;
+            const row = document.createElement("div");
             row.className = "fm-row";
+
+            row.onclick = (e) => {
+              if (e.target.closest('.fm-row-menu-btn') || e.target.closest('.fm-dropdown-menu')) return;
+              if (isDir) {
+                this.load(fullPath);
+              } else {
+                fileEditor.open(fullPath);
+              }
+            };
+
+            const iconHtml = this.getFileIcon(item.name, isDir, isZip);
             row.innerHTML = `
               <div class="fm-name-col">
-                <i class="fa-solid ${f.is_dir ? 'fa-folder' : 'fa-file'}" style="color:${f.is_dir ? '#2563eb' : '#94a3b8'}"></i>
-                <span class="fm-item-name">${f.name}</span>
+                <span class="fm-item-icon-box">${iconHtml}</span>
+                <span class="fm-item-name" title="${item.name}">${item.name}</span>
               </div>
-              <button class="fm-row-menu-btn" onclick="fileManager.openMenu(event, '${f.name}', ${f.is_dir}, '${fullPath}')">
-                <i class="fa-solid fa-ellipsis-vertical"></i>
-              </button>
+              <div class="fm-menu-col">
+                <button class="fm-row-menu-btn" title="Actions" aria-label="Item Actions">
+                  ${ICONS.more}
+                </button>
+              </div>
             `;
-            row.onclick = (e) => {
-              if (e.target.closest('.fm-row-menu-btn')) return;
-              f.is_dir ? this.load(fullPath) : fileEditor.open(fullPath);
+
+            const menuBtn = row.querySelector('.fm-row-menu-btn');
+            menuBtn.onclick = (e) => {
+              e.stopPropagation();
+              this.openDropdown(menuBtn, item, fullPath);
             };
-            cont.appendChild(row);
+
+            container.appendChild(row);
           });
-        } catch (e) { showToast(e.message); }
+        } catch (err) {
+          container.innerHTML = `
+            <div class="fm-empty-state">
+              <div class="fm-empty-text" style="color: var(--danger)">Error: ${err.message}</div>
+            </div>
+          `;
+        }
       },
-      openMenu(e, name, isDir, fullPath) {
-        e.stopPropagation();
-        const drop = document.getElementById('fm-dropdown');
-        drop.innerHTML = `
-          <button class="fm-dropdown-item" onclick="fileManager.rename('${fullPath}')"><i class="fa-solid fa-pen"></i> Rename</button>
-          ${!isDir ? `<a class="fm-dropdown-item" href="/api/download/${CONFIG.SERVER_ID}?path=${encodeURIComponent(fullPath)}" download><i class="fa-solid fa-download"></i> Download</a>` : ''}
-          ${name.endsWith('.zip') ? `<button class="fm-dropdown-item" onclick="fileManager.extract('${fullPath}')"><i class="fa-solid fa-file-zipper"></i> Extract</button>` : ''}
-          <button class="fm-dropdown-item danger-item" onclick="fileManager.delete('${fullPath}')"><i class="fa-solid fa-trash"></i> Delete</button>
-        `;
-        drop.style.top = `${e.clientY + window.scrollY}px`;
-        drop.style.left = `${Math.min(e.clientX, window.innerWidth - 160)}px`;
-        drop.classList.add('show');
-      },
-      rename(oldPath) {
-        openPrompt("Rename", oldPath.split('/').pop(), async (newName) => {
-          if (!newName) return;
-          const p = oldPath.split('/'); p.pop(); p.push(newName);
-          await api.post(`/api/rename/${CONFIG.SERVER_ID}`, { old_path: oldPath, new_path: p.join('/') });
-          this.load();
+
+      openDropdown(anchorBtn, item, fullPath) {
+        const dropdownEl = document.getElementById('fm-dropdown');
+        const isDir = Boolean(item.is_dir);
+        const isZip = item.name.endsWith('.zip');
+        const rect = anchorBtn.getBoundingClientRect();
+
+        let menuHtml = '';
+        if (isDir) {
+          menuHtml = `
+            <button class="fm-dropdown-item" data-action="open">
+              ${ICONS.folderOpen}
+              <span>Open</span>
+            </button>
+            <button class="fm-dropdown-item" data-action="rename">
+              ${ICONS.edit}
+              <span>Rename</span>
+            </button>
+            <button class="fm-dropdown-item danger-item" data-action="delete">
+              ${ICONS.trash}
+              <span>Delete</span>
+            </button>
+          `;
+        } else {
+          menuHtml = `
+            <button class="fm-dropdown-item" data-action="open">
+              ${ICONS.edit}
+              <span>Open / Edit</span>
+            </button>
+            ${isZip ? `
+            <button class="fm-dropdown-item" data-action="extract">
+              ${ICONS.folderOpen}
+              <span>Extract ZIP</span>
+            </button>` : ''}
+            <button class="fm-dropdown-item" data-action="rename">
+              ${ICONS.edit}
+              <span>Rename</span>
+            </button>
+            <button class="fm-dropdown-item" data-action="download">
+              ${ICONS.download}
+              <span>Download</span>
+            </button>
+            <button class="fm-dropdown-item danger-item" data-action="delete">
+              ${ICONS.trash}
+              <span>Delete</span>
+            </button>
+          `;
+        }
+
+        dropdownEl.innerHTML = menuHtml;
+        dropdownEl.classList.add('show');
+
+        const dropdownWidth = 144;
+        let left = rect.right - dropdownWidth;
+        if (left < 10) left = 10;
+        let top = rect.bottom + window.scrollY + 4;
+
+        dropdownEl.style.position = 'absolute';
+        dropdownEl.style.top = `${top}px`;
+        dropdownEl.style.left = `${left}px`;
+
+        dropdownEl.querySelectorAll('.fm-dropdown-item').forEach(btn => {
+          btn.onclick = (e) => {
+            e.stopPropagation();
+            const action = btn.getAttribute('data-action');
+            this.handleAction(action, item, fullPath);
+            this.closeDropdown();
+          };
         });
       },
-      async delete(path) {
-        if (!confirm(`Delete ${path}?`)) return;
-        await api.delete(`/api/file/${CONFIG.SERVER_ID}`, { path });
-        this.load();
+
+      closeDropdown() {
+        document.getElementById('fm-dropdown').classList.remove('show');
       },
-      async extract(path) {
-        await api.post(`/api/extract/${CONFIG.SERVER_ID}`, { file_path: path });
-        showToast("Extracted!");
-        this.load();
+
+      async handleAction(action, item, fullPath) {
+        if (action === 'open') {
+          if (item.is_dir) this.load(fullPath);
+          else fileEditor.open(fullPath);
+        } else if (action === 'rename') {
+          openPromptModal(`Rename ${item.is_dir ? 'Folder' : 'File'}`, 'Enter new name:', item.name, 'Save', async (newName) => {
+            if (!newName || newName === item.name) return;
+            const parentDir = fullPath.includes("/") ? fullPath.substring(0, fullPath.lastIndexOf("/")) : "";
+            const newPath = parentDir ? `${parentDir}/${newName}` : newName;
+            try {
+              await api.post(`/api/rename/${CONFIG.SERVER_ID}`, { old_path: fullPath, new_path: newPath });
+              showToast("Renamed successfully");
+              this.load();
+            } catch (err) { showToast("Rename Failed: " + err.message); }
+          });
+        } else if (action === 'extract') {
+          try {
+            await api.post(`/api/extract/${CONFIG.SERVER_ID}`, { file_path: fullPath, target_path: this.currentPath || "" });
+            showToast("ZIP Extracted Successfully");
+            this.load();
+          } catch (err) { showToast("Extract Failed: " + err.message); }
+        } else if (action === 'download') {
+          try {
+            const res = await api.get(`/api/file/${CONFIG.SERVER_ID}?path=${encodeURIComponent(fullPath)}`);
+            const blob = new Blob([res.content || ""], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = item.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast(`Downloaded ${item.name}`);
+          } catch (err) { showToast("Download failed: " + err.message); }
+        } else if (action === 'delete') {
+          openDeleteConfirmModal(item.name, async () => {
+            try {
+              await api.delete(`/api/file/${CONFIG.SERVER_ID}`, { path: fullPath });
+              showToast(`Deleted ${item.name}`);
+              this.load();
+            } catch (err) { showToast("Delete Failed: " + err.message); }
+          });
+        }
       },
+
       openNewFolderModal() {
-        openPrompt("New Folder", "", async (name) => {
-          if (name) { await api.post(`/api/create_folder/${CONFIG.SERVER_ID}`, { path: `${this.currentPath}/${name}` }); this.load(); }
+        openPromptModal('New Folder', 'Enter folder name:', 'new-folder', 'Create', async (folderName) => {
+          if (!folderName) return;
+          const path = this.currentPath ? `${this.currentPath}/${folderName}` : folderName;
+          try {
+            await api.post(`/api/create_folder/${CONFIG.SERVER_ID}`, { path, folder_name: folderName });
+            showToast(`Created folder ${folderName}`);
+            this.load();
+          } catch (err) { showToast("Failed: " + err.message); }
         });
       },
+
       openNewFileModal() {
-        openPrompt("New File", "script.py", async (name) => {
-          if (name) { await api.post(`/api/file/${CONFIG.SERVER_ID}`, { path: `${this.currentPath}/${name}`, content: "" }); this.load(); }
+        openPromptModal('New File', 'Enter file name (e.g. main.py):', 'untitled.txt', 'Create', async (filename) => {
+          if (!filename) return;
+          const path = this.currentPath ? `${this.currentPath}/${filename}` : filename;
+          try {
+            await api.post(`/api/file/${CONFIG.SERVER_ID}`, { path, content: "" });
+            showToast(`Created ${filename}`);
+            this.load();
+            fileEditor.open(path);
+          } catch (err) { showToast("Failed: " + err.message); }
         });
       },
+
       async handleUpload(e) {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
         const fd = new FormData();
-        for (let file of e.target.files) fd.append('file', file);
-        fd.append('path', this.currentPath);
-        await fetch(`/api/upload/${CONFIG.SERVER_ID}`, { method: 'POST', body: fd });
-        this.load();
+        for (let i = 0; i < files.length; i++) fd.append("file", files[i]);
+        fd.append("path", this.currentPath || "");
+        try {
+          await api.upload(`/api/upload/${CONFIG.SERVER_ID}`, fd);
+          showToast(`Uploaded ${files.length} file(s)`);
+          this.load();
+        } catch (err) { showToast("Upload Failed: " + err.message); }
+        e.target.value = "";
       }
     };
 
+    /* FILE EDITOR */
     const fileEditor = {
       modal: document.getElementById('fm-editor-modal'),
-      currentPath: null,
-      async open(path) {
-        this.currentPath = path;
-        document.getElementById('fm-editor-filename').textContent = path.split('/').pop();
-        const res = await api.get(`/api/file/${CONFIG.SERVER_ID}?path=${encodeURIComponent(path)}`);
-        document.getElementById('fm-editor-content').value = res.content || '';
+      filenameEl: document.getElementById('fm-editor-filename'),
+      contentEl: document.getElementById('fm-editor-content'),
+      saveBtn: document.getElementById('fm-editor-save'),
+      cancelBtn: document.getElementById('fm-editor-cancel'),
+      currentFilePath: null,
+
+      async open(filePath) {
+        this.currentFilePath = filePath;
+        this.filenameEl.textContent = `Editing ${filePath.split("/").pop()}`;
+        this.contentEl.value = "Loading content...";
         this.modal.classList.add('open');
+
+        try {
+          const res = await api.get(`/api/file/${CONFIG.SERVER_ID}?path=${encodeURIComponent(filePath)}`);
+          this.contentEl.value = res.content !== undefined ? res.content : "";
+          this.contentEl.focus();
+        } catch (err) {
+          showToast("Failed to read file: " + err.message);
+          this.modal.classList.remove('open');
+        }
       },
+
       async save() {
-        await api.post(`/api/file/${CONFIG.SERVER_ID}`, { path: this.currentPath, content: document.getElementById('fm-editor-content').value });
-        showToast("File Saved");
-        this.modal.classList.remove('open');
+        if (!this.currentFilePath) return;
+        this.saveBtn.textContent = "Saving...";
+        this.saveBtn.disabled = true;
+        try {
+          await api.post(`/api/file/${CONFIG.SERVER_ID}`, {
+            path: this.currentFilePath,
+            content: this.contentEl.value
+          });
+          showToast("File saved successfully");
+          this.modal.classList.remove('open');
+        } catch (err) {
+          showToast("Save Failed: " + err.message);
+        } finally {
+          this.saveBtn.textContent = "Save Changes";
+          this.saveBtn.disabled = false;
+        }
       }
     };
-    document.getElementById('fm-editor-save').onclick = () => fileEditor.save();
 
-    const githubDeploy = {
-      async start(e) {
+    fileEditor.saveBtn.onclick = () => fileEditor.save();
+    fileEditor.cancelBtn.onclick = () => fileEditor.modal.classList.remove('open');
+
+    // Tab key support inside textarea
+    fileEditor.contentEl.addEventListener("keydown", (e) => {
+      if (e.key === "Tab") {
         e.preventDefault();
-        const repo_url = document.getElementById('gh-repo-url').value;
-        const access_token = document.getElementById('gh-token').value;
-        await api.post(`/api/github/deploy/${CONFIG.SERVER_ID}`, { repo_url, access_token, is_private: !!access_token });
-        showToast("Deployment started!");
-        this.pollLogs();
-      },
-      async pollLogs() {
-        const res = await api.get(`/api/github/logs/${CONFIG.SERVER_ID}`);
-        document.getElementById('gh-logs-box').textContent = res.logs || "";
+        const start = fileEditor.contentEl.selectionStart;
+        const end = fileEditor.contentEl.selectionEnd;
+        fileEditor.contentEl.value = fileEditor.contentEl.value.substring(0, start) + "    " + fileEditor.contentEl.value.substring(end);
+        fileEditor.contentEl.selectionStart = fileEditor.contentEl.selectionEnd = start + 4;
       }
-    };
+      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
+        e.preventDefault();
+        fileEditor.save();
+      }
+    });
 
+    /* STARTUP CONFIG */
     const startupConfig = {
       async load() {
-        const d = await api.get(`/api/get_startup/${CONFIG.SERVER_ID}`);
-        document.getElementById('startup-main-file').value = d.main_file || 'main.py';
-        document.getElementById('startup-req-file').value = d.req_file || 'requirements.txt';
+        try {
+          const data = await api.get(`/api/get_startup/${CONFIG.SERVER_ID}`);
+          document.getElementById("startup-main-file").value = data.main_file || "main.py";
+          document.getElementById("startup-req-file").value = data.req_file || "requirements.txt";
+        } catch (e) {}
       },
       async save(e) {
         e.preventDefault();
-        await api.post(`/api/set_startup/${CONFIG.SERVER_ID}`, {
-          main_file: document.getElementById('startup-main-file').value,
-          req_file: document.getElementById('startup-req-file').value
-        });
-        showToast("Startup Config Saved");
+        try {
+          await api.post(`/api/set_startup/${CONFIG.SERVER_ID}`, {
+            main_file: document.getElementById("startup-main-file").value.trim(),
+            req_file: document.getElementById("startup-req-file").value.trim()
+          });
+          showToast("Startup configuration saved");
+        } catch (err) {
+          showToast("Failed to save startup config: " + err.message);
+        }
       }
     };
 
-    window.addEventListener('click', () => document.getElementById('fm-dropdown').classList.remove('show'));
+    /* CLOSE DROPDOWNS ON OUTSIDE CLICK */
+    window.addEventListener('click', (e) => {
+      if (!e.target.closest('#fm-dropdown') && !e.target.closest('.fm-row-menu-btn')) {
+        fileManager.closeDropdown();
+      }
+    });
 
+    /* INITIAL LOAD */
     document.addEventListener("DOMContentLoaded", () => {
       startupConfig.load();
-      updateDashboard();
-      setInterval(updateDashboard, CONFIG.POLL_INTERVAL);
+      pollLogs();
+      setInterval(pollLogs, CONFIG.LOGS_POLL_INTERVAL);
     });
   </script>
 </body>
