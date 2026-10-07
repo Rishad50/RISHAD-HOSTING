@@ -652,7 +652,87 @@ def api_github_clear_logs(server_id):
     if os.path.exists(log_file): 
         os.remove(log_file)
     return jsonify({'status': 'success'})
+    
+# ============================================
+# মাল্টি-সার্ভার ম্যানেজমেন্ট API (Multi-Server APIs)
+# ============================================
 
+@app.route('/api/servers', methods=['GET'])
+def api_get_servers():
+    servers = load_servers()
+    server_list = []
+    for s_id, s_data in servers.items():
+        server_list.append({
+            'server_id': s_id,
+            'name': s_data.get('name', s_id),
+            'status': s_data.get('status', 'stopped'),
+            'created': s_data.get('created', '')
+        })
+    return jsonify({'servers': server_list})
+
+@app.route('/api/create_server', methods=['POST'])
+def api_create_server():
+    data = request.get_json() or {}
+    raw_name = data.get('name', '').strip()
+    if not raw_name:
+        return jsonify({'status': 'error', 'message': 'সার্ভারের নাম দিন!'}), 400
+    
+    # আইডি জেনারেট করা
+    clean_id = re.sub(r'[^a-zA-Z0-9_-]', '_', raw_name.lower())[:20]
+    if not clean_id:
+        clean_id = f"server_{int(time.time())}"
+    
+    servers = load_servers()
+    if clean_id in servers:
+        clean_id = f"{clean_id}_{int(time.time()) % 1000}"
+        
+    server_dir = get_server_dir(clean_id)
+    create_default_files(server_dir)
+    
+    servers[clean_id] = {
+        'server_id': clean_id,
+        'name': raw_name,
+        'type': 'python',
+        'ram': '1GB',
+        'disk': '1GB',
+        'status': 'stopped',
+        'pid': None,
+        'created': str(datetime.now()),
+        'main_file': 'main.py',
+        'requirements_file': 'requirements.txt',
+        'cpu_limit': 80,
+        'rate_limit_exceeded': False,
+        'stopped_by_user': False
+    }
+    save_servers(servers)
+    return jsonify({'status': 'success', 'server_id': clean_id, 'message': 'সার্ভার তৈরি হয়েছে!'})
+
+@app.route('/api/delete_server/<server_id>', methods=['POST', 'DELETE'])
+def api_delete_server(server_id):
+    if server_id == 'default':
+        return jsonify({'status': 'error', 'message': 'ডিফল্ট সার্ভার ডিলিট করা যাবে না'}), 400
+        
+    servers = load_servers()
+    if server_id not in servers:
+        return jsonify({'status': 'error', 'message': 'সার্ভার পাওয়া যায়নি'}), 404
+        
+    # রানিং থাকলে বন্ধ করা
+    if servers[server_id].get('pid'):
+        stop_bot_process(servers[server_id]['pid'])
+    RUNNING_PROCESSES.pop(server_id, None)
+    
+    # ফোল্ডার ডিলিট
+    server_dir = os.path.join(BOTS_DIR, server_id)
+    if os.path.exists(server_dir):
+        try:
+            shutil.rmtree(server_dir)
+        except Exception:
+            pass
+            
+    del servers[server_id]
+    save_servers(servers)
+    return jsonify({'status': 'success', 'message': 'সার্ভার ডিলিট সফল হয়েছে'})
+    
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
