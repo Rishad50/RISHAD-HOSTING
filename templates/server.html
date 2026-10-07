@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
   <title>Server Manager - All Servers</title>
   
-  <!-- FontAwesome 6 CDN -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
   <style>
@@ -24,11 +23,7 @@
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
       font-family: var(--font-sans);
@@ -40,12 +35,8 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    .container {
-      width: 100%;
-      max-width: 520px;
-    }
+    .container { width: 100%; max-width: 520px; }
 
-    /* HEADER */
     .dashboard-header {
       display: flex;
       align-items: center;
@@ -88,7 +79,6 @@
       background-color: var(--primary-hover);
     }
 
-    /* STATS SUMMARY BAR */
     .stats-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -105,20 +95,9 @@
       box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
     }
 
-    .stat-number {
-      font-size: 1.15rem;
-      font-weight: 700;
-      color: var(--text-dark);
-    }
+    .stat-number { font-size: 1.15rem; font-weight: 700; color: var(--text-dark); }
+    .stat-label { font-size: 0.68rem; font-weight: 500; color: var(--text-muted); margin-top: 0.15rem; }
 
-    .stat-label {
-      font-size: 0.68rem;
-      font-weight: 500;
-      color: var(--text-muted);
-      margin-top: 0.15rem;
-    }
-
-    /* SERVERS LIST */
     .section-title {
       font-size: 0.85rem;
       font-weight: 700;
@@ -128,11 +107,7 @@
       margin-bottom: 0.75rem;
     }
 
-    .servers-list {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-    }
+    .servers-list { display: flex; flex-direction: column; gap: 0.75rem; }
 
     .server-card {
       background: var(--card-bg);
@@ -146,23 +121,10 @@
       transition: border-color 0.15s, box-shadow 0.15s;
     }
 
-    .server-card:hover {
-      border-color: #cbd5e1;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    }
+    .server-card:hover { border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
 
-    .card-top {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .server-identity {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      overflow: hidden;
-    }
+    .card-top { display: flex; align-items: center; justify-content: space-between; }
+    .server-identity { display: flex; align-items: center; gap: 0.75rem; overflow: hidden; }
 
     .server-icon-box {
       width: 40px;
@@ -177,24 +139,9 @@
       flex-shrink: 0;
     }
 
-    .server-info {
-      overflow: hidden;
-    }
-
-    .server-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: var(--text-dark);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .server-sub {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      margin-top: 0.1rem;
-    }
+    .server-info { overflow: hidden; }
+    .server-title { font-size: 0.95rem; font-weight: 700; color: var(--text-dark); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .server-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.1rem; }
 
     .status-badge {
       display: inline-flex;
@@ -207,28 +154,11 @@
       flex-shrink: 0;
     }
 
-    .badge-running {
-      background: #ecfdf5;
-      color: var(--success);
-      border: 1px solid #a7f3d0;
-    }
+    .badge-running { background: #ecfdf5; color: var(--success); border: 1px solid #a7f3d0; }
+    .badge-stopped { background: #f1f5f9; color: var(--text-muted); border: 1px solid #e2e8f0; }
 
-    .badge-stopped {
-      background: #f1f5f9;
-      color: var(--text-muted);
-      border: 1px solid #e2e8f0;
-    }
-
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: currentColor;
-    }
-
-    .badge-running .status-dot {
-      animation: pulse 1.5s infinite;
-    }
+    .status-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .badge-running .status-dot { animation: pulse 1.5s infinite; }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
@@ -243,18 +173,8 @@
       border-top: 1px solid var(--border-light);
     }
 
-    .server-specs {
-      font-size: 0.72rem;
-      color: var(--text-muted);
-      display: flex;
-      gap: 0.65rem;
-    }
-
-    .card-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.45rem;
-    }
+    .server-specs { font-size: 0.72rem; color: var(--text-muted); display: flex; gap: 0.65rem; }
+    .card-actions { display: flex; align-items: center; gap: 0.45rem; }
 
     .btn-action-manage {
       background: var(--primary-light);
@@ -270,10 +190,7 @@
       transition: all 0.15s;
     }
 
-    .btn-action-manage:hover {
-      background: var(--primary);
-      color: #ffffff;
-    }
+    .btn-action-manage:hover { background: var(--primary); color: #ffffff; }
 
     .btn-action-delete {
       background: #fee2e2;
@@ -286,12 +203,8 @@
       transition: all 0.15s;
     }
 
-    .btn-action-delete:hover {
-      background: var(--danger);
-      color: #ffffff;
-    }
+    .btn-action-delete:hover { background: var(--danger); color: #ffffff; }
 
-    /* EMPTY STATE */
     .empty-state {
       background: var(--card-bg);
       border: 1px dashed var(--border);
@@ -301,13 +214,8 @@
       color: var(--text-muted);
     }
 
-    .empty-icon {
-      font-size: 2.2rem;
-      color: #cbd5e1;
-      margin-bottom: 0.65rem;
-    }
+    .empty-icon { font-size: 2.2rem; color: #cbd5e1; margin-bottom: 0.65rem; }
 
-    /* MODAL */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -323,10 +231,7 @@
       transition: all 0.2s ease;
     }
 
-    .modal-backdrop.open {
-      opacity: 1;
-      visibility: visible;
-    }
+    .modal-backdrop.open { opacity: 1; visibility: visible; }
 
     .modal-card {
       background: #ffffff;
@@ -335,58 +240,19 @@
       max-width: 380px;
       padding: 1.25rem;
       transform: scale(0.95);
-      transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: transform 0.2s;
     }
 
-    .modal-backdrop.open .modal-card {
-      transform: scale(1);
-    }
-
-    .modal-title {
-      font-size: 1.05rem;
-      font-weight: 700;
-      margin-bottom: 0.3rem;
-    }
-
-    .modal-desc {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin-bottom: 1rem;
-    }
-
-    .modal-input {
-      width: 100%;
-      padding: 0.6rem 0.75rem;
-      font-size: 0.85rem;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      outline: none;
-      margin-bottom: 1.15rem;
-    }
-
-    .modal-input:focus {
-      border-color: var(--primary);
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 0.5rem;
-    }
-
-    .btn-modal {
-      padding: 0.5rem 0.9rem;
-      font-size: 0.8rem;
-      font-weight: 600;
-      border-radius: 8px;
-      cursor: pointer;
-      border: none;
-    }
-
+    .modal-backdrop.open .modal-card { transform: scale(1); }
+    .modal-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.3rem; }
+    .modal-desc { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1rem; }
+    .modal-input { width: 100%; padding: 0.6rem 0.75rem; font-size: 0.85rem; border: 1px solid var(--border); border-radius: 8px; outline: none; margin-bottom: 1.15rem; }
+    .modal-input:focus { border-color: var(--primary); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+    .btn-modal { padding: 0.5rem 0.9rem; font-size: 0.8rem; font-weight: 600; border-radius: 8px; cursor: pointer; border: none; }
     .btn-modal-cancel { background: #f1f5f9; color: var(--text-muted); }
     .btn-modal-submit { background: var(--primary); color: #fff; }
 
-    /* TOAST */
     .toast {
       position: fixed;
       bottom: 20px;
@@ -404,18 +270,13 @@
       white-space: nowrap;
     }
 
-    .toast.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-      visibility: visible;
-    }
+    .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; visibility: visible; }
   </style>
 </head>
 <body>
 
   <div class="container">
     
-    <!-- DASHBOARD HEADER -->
     <div class="dashboard-header">
       <div class="header-title-box">
         <h1>My Servers</h1>
@@ -427,7 +288,6 @@
       </button>
     </div>
 
-    <!-- STATS BAR -->
     <div class="stats-grid">
       <div class="stat-card">
         <div class="stat-number" id="stat-total">0</div>
@@ -443,7 +303,6 @@
       </div>
     </div>
 
-    <!-- SERVERS LIST -->
     <div class="section-title">All Instances</div>
     <div class="servers-list" id="servers-container">
       <div class="empty-state">
@@ -467,7 +326,6 @@
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATION -->
   <div class="toast" id="toast">Notification</div>
 
   <script>
