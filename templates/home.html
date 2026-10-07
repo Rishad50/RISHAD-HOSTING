@@ -45,7 +45,7 @@
     body {
       font-family: var(--font-sans);
       background-color: var(--bg);
-      /* স্ক্রিনের চারপাশে সুন্দর মার্জিন এবং নিচের ফাঁকা জায়গা রিমুভ */
+      /* স্ক্রিনের চারপাশে সুন্দর মার্জিন এবং নিচের অতিরিক্ত ফাঁকা জায়গা বাদ দেওয়া হয়েছে */
       padding: 0.75rem 0.5rem calc(var(--nav-height) + 0.4rem + env(safe-area-inset-bottom, 0px));
       display: flex;
       justify-content: center;
@@ -73,12 +73,12 @@
       100% { opacity: 1; transform: translateY(0); }
     }
 
-    /* SERVER CONTROLS CARD (দুই পাশের ফাঁকা জায়গা একদম দূর করা হয়েছে) */
+    /* SERVER CONTROLS CARD (দুই পাশের অতিরিক্ত প্যাডিং একদম দূর করা হয়েছে) */
     .server-controls-card {
       background: var(--card-bg);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 5px; /* একদম পারফেক্ট ও কম প্যাডিং */
+      padding: 5px; /* একদম টাইট ও পারফেক্ট প্যাডিং */
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
       margin-bottom: 0.75rem;
     }
@@ -86,7 +86,7 @@
     .control-buttons-grid {
       display: grid !important;
       grid-template-columns: repeat(4, 1fr) !important;
-      gap: 5px; /* প্রতিটি বাটনের মধ্যকার সমান ফাঁকা জায়গা */
+      gap: 5px;
       width: 100%;
     }
 
@@ -157,7 +157,7 @@
       font-size: 9.5px;
       line-height: 1.6;
       color: #cbd5e1;
-      height: 485px;
+      height: 440px;
       overflow-y: auto;
       white-space: pre-wrap;
       word-break: break-all;
@@ -798,7 +798,7 @@
     <!-- VIEW 1: HOME TAB -->
     <div id="tab-home" class="tab-content active" role="tabpanel" aria-labelledby="nav-btn-home">
       
-      <!-- 1. SERVER CONTROLS CARD (পুরো স্পেস জুড়ে সমানভাবে ফিট করা ৪টি বাটন) -->
+      <!-- 1. SERVER CONTROLS CARD (পুরো কার্ড জুড়ে সমানভাবে ফিট করা ৪টি বাটন) -->
       <div class="server-controls-card">
         <div class="control-buttons-grid">
           <button id="btn-detail-start" class="btn-control btn-ctrl-start" onclick="serverActions.start()">
@@ -1097,23 +1097,40 @@
       }
     };
 
-    /* TERMINAL CLEAR ACTION (সার্ভার সহ ফাইল ক্লিন করবে) */
+    /* TERMINAL CLEAR ACTION (সার্ভারের আসল output.log ফাইল ক্লিয়ার করবে) */
     const terminalActions = {
       async clear() {
         try {
-          // ১. স্ক্রিন ফাঁকা করা
           terminalEl.innerHTML = "";
           lastLogText = "";
-          
-          // ২. পাইথন সার্ভারের মূল output.log ফাইলটি ডিলিট/ক্লিন করা
+          // পাইথনের /api/clear_logs/<server_id> কল করে ফাইল ক্লিন করা
           await api.post(`/api/clear_logs/${CONFIG.SERVER_ID}`);
-          
           showToast("Terminal & Logs Cleared");
         } catch (err) {
           showToast("Clear Failed: " + err.message);
         }
       }
     };
+
+    /* REALTIME LOGS */
+    let lastLogText = "";
+    const terminalEl = document.getElementById("detail-recent-logs");
+
+    async function pollLogs() {
+      try {
+        const res = await api.get(`/api/logs/${CONFIG.SERVER_ID}`);
+        let rawLogs = typeof res === "string" ? res : (res.logs || res.output || "");
+        if (rawLogs !== lastLogText) {
+          if (rawLogs.includes('\x1b[2J') || rawLogs.includes('[H[2J')) {
+            let parts = rawLogs.split(/\x1b\[2J|\[H\[2J/);
+            rawLogs = parts[parts.length - 1];
+          }
+          terminalEl.innerHTML = rawLogs ? ansiUp.ansi_to_html(rawLogs) : "";
+          terminalEl.scrollTop = terminalEl.scrollHeight;
+          lastLogText = rawLogs;
+        }
+      } catch (e) {}
+    }
 
     /* COMMAND CONTROLLER */
     const commandController = {
