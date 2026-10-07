@@ -265,6 +265,11 @@ def get_process_stats(pid):
 # ============================================
 # পেজ রাউটস (Page Routes)
 # ============================================
+@app.route('/servers')
+@app.route('/dashboard')
+def servers_dashboard():
+    return render_template('server.html')
+
 
 @app.route('/')
 def home_redirect():
