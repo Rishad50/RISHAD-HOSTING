@@ -2,9 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, jsonify
 import json
 import os
 import subprocess
-import string
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime
 import sys
 import shutil
 import threading
@@ -24,7 +23,7 @@ RUNNING_PROCESSES = {}
 os.makedirs(BOTS_DIR, exist_ok=True)
 
 # ============================================
-# ডাটাবেস ও হেল্পার (Database & Helper Functions)
+# ডাটাবেস ও হেল্পার ফাংশন
 # ============================================
 
 def load_servers():
@@ -78,6 +77,7 @@ def get_or_create_default_server():
         create_default_files(server_dir)
         servers['default'] = {
             'server_id': 'default',
+            'name': 'Default Server',
             'type': 'python',
             'ram': '1GB',
             'disk': '1GB',
@@ -220,11 +220,9 @@ def run_bot(server_id, main_file='main.py', requirements_file='requirements.txt'
                 for line in iter(proc.stdout.readline, ''):
                     if not line:
                         break
-                    
                     if any(c in line for c in ['\x1b[2J', '\x1b[H', '[H[2J', '\033[2J', '\x1b[3J']):
                         with open(log_file, 'w', encoding='utf-8') as f:
                             f.write("")
-                    
                     with open(log_file, 'a', encoding='utf-8') as f:
                         f.write(line)
                         f.flush()
@@ -249,32 +247,15 @@ def stop_bot_process(pid):
     except Exception:
         return False
 
-def get_process_stats(pid):
-    try:
-        proc = psutil.Process(pid)
-        cpu = proc.cpu_percent(interval=0.2)
-        mem = proc.memory_info()
-        ram = mem.rss / (1024 * 1024)
-        return {
-            'cpu_percent': round(cpu, 1),
-            'ram_display': f"{ram:.1f} MB" if ram < 1024 else f"{ram/1024:.1f} GB",
-        }
-    except Exception:
-        return {'cpu_percent': 0, 'ram_display': '0 MB'}
-
 # ============================================
-# পেজ রাউটস (Page Routes)
+# পেজ রাউটস
 # ============================================
-@app.route('/servers')
-@app.route('/dashboard')
-def servers_dashboard():
-    return render_template('server.html')
-
 
 @app.route('/')
-def home_redirect():
-    default_srv = get_or_create_default_server()
-    return redirect(url_for('server_panel', server_id=default_srv['server_id']))
+@app.route('/servers')
+def servers_dashboard():
+    get_or_create_default_server()
+    return render_template('server.html')
 
 @app.route('/<server_id>')
 def server_panel(server_id):
@@ -284,6 +265,7 @@ def server_panel(server_id):
         create_default_files(server_dir)
         servers[server_id] = {
             'server_id': server_id,
+            'name': server_id,
             'type': 'python',
             'ram': '1GB',
             'disk': '1GB',
@@ -297,15 +279,91 @@ def server_panel(server_id):
             'stopped_by_user': False
         }
         save_servers(servers)
-    
     return render_template('home.html', current_server=servers[server_id])
 
 # ============================================
-# বট কন্ট্রোল API (Process Control)
+# মাল্টি-সার্ভার API
+# ============================================
+
+@app.route('/api/servers', methods=['GET'])
+def api_get_servers():
+    get_or_create_default_server()
+    servers = load_servers()
+    server_list = []
+    for s_id, s_data in servers.items():
+        server_list.append({
+            'server_id': s_id,
+            'name': s_data.get('name', s_id),
+            'status': s_data.get('status', 'stopped'),
+            'type': s_data.get('type', 'python'),
+            'created': s_data.get('created', '')
+        })
+    return jsonify({'servers': server_list})
+
+@app.route('/api/create_server', methods=['POST'])
+def api_create_server():
+    data = request.get_json() or {}
+    raw_name = data.get('name', '').strip()
+    if not raw_name:
+        return jsonify({'status': 'error', 'message': 'Server name is required'}), 400
+    
+    clean_id = re.sub(r'[^a-zA-Z0-9_-]', '_', raw_name.lower())[:20]
+    if not clean_id:
+        clean_id = f"server_{int(time.time())}"
+    
+    servers = load_servers()
+    if clean_id in servers:
+        clean_id = f"{clean_id}_{int(time.time()) % 1000}"
+        
+    server_dir = get_server_dir(clean_id)
+    create_default_files(server_dir)
+    
+    servers[clean_id] = {
+        'server_id': clean_id,
+        'name': raw_name,
+        'type': 'python',
+        'ram': '1GB',
+        'disk': '1GB',
+        'status': 'stopped',
+        'pid': None,
+        'created': str(datetime.now()),
+        'main_file': 'main.py',
+        'requirements_file': 'requirements.txt',
+        'cpu_limit': 80,
+        'rate_limit_exceeded': False,
+        'stopped_by_user': False
+    }
+    save_servers(servers)
+    return jsonify({'status': 'success', 'server_id': clean_id, 'message': 'Created successfully'})
+
+@app.route('/api/delete_server/<server_id>', methods=['DELETE', 'POST'])
+def api_delete_server(server_id):
+    if server_id == 'default':
+        return jsonify({'status': 'error', 'message': 'Default server cannot be deleted'}), 400
+    servers = load_servers()
+    if server_id not in servers:
+        return jsonify({'status': 'error', 'message': 'Server not found'}), 404
+        
+    if servers[server_id].get('pid'):
+        stop_bot_process(servers[server_id]['pid'])
+    RUNNING_PROCESSES.pop(server_id, None)
+    
+    server_dir = os.path.join(BOTS_DIR, server_id)
+    if os.path.exists(server_dir):
+        try:
+            shutil.rmtree(server_dir)
+        except Exception:
+            pass
+            
+    del servers[server_id]
+    save_servers(servers)
+    return jsonify({'status': 'success', 'message': 'Deleted successfully'})
+
+# ============================================
+# বট কন্ট্রোল ও লগ API
 # ============================================
 
 @app.route('/api/start/<server_id>', methods=['POST'])
-@app.route('/api/run/<server_id>', methods=['POST'])
 def api_start_server(server_id):
     servers = load_servers()
     server = servers.get(server_id)
@@ -338,7 +396,6 @@ def api_stop(server_id):
         stop_bot_process(server['pid'])
     
     RUNNING_PROCESSES.pop(server_id, None)
-    
     server['status'] = 'stopped'
     server['pid'] = None
     server['stopped_by_user'] = True
@@ -350,7 +407,6 @@ def api_stop(server_id):
             f.write(f"\n\033[91m[{datetime.now().strftime('%I:%M:%S %p')}] Server stopped\033[0m\n")
     except Exception: 
         pass
-    
     return jsonify({'status': 'success', 'message': 'Stopped'})
 
 @app.route('/api/restart/<server_id>', methods=['POST'])
@@ -409,23 +465,8 @@ def api_command():
     except Exception as e: 
         return jsonify({'status': 'error', 'message': str(e)})
 
-@app.route('/api/stats/<server_id>')
-def api_stats(server_id):
-    servers = load_servers()
-    server = servers.get(server_id)
-    if not server:
-        return jsonify({'cpu': '0%', 'ram': '0 MB', 'status': 'stopped'})
-    
-    cpu, ram = "0%", "0 MB"
-    if server.get('status') == 'running' and server.get('pid'):
-        stats = get_process_stats(server['pid'])
-        cpu = f"{stats['cpu_percent']}%"
-        ram = stats['ram_display']
-    
-    return jsonify({'cpu': cpu, 'ram': ram, 'status': server.get('status', 'stopped')})
-
 # ============================================
-# ফাইল ম্যানেজার API (File Operations)
+# ফাইল ম্যানেজার API
 # ============================================
 
 def format_file_size(size_bytes):
@@ -515,7 +556,7 @@ def api_upload(server_id):
 @app.route('/api/create_folder/<server_id>', methods=['POST'])
 def api_create_folder(server_id):
     data = request.get_json() or {}
-    folder_rel = data.get('path', '') or data.get('folder_name', '') or data.get('foldername', '')
+    folder_rel = data.get('path', '') or data.get('folder_name', '')
     target = os.path.normpath(os.path.join(get_server_dir(server_id), folder_rel.lstrip('/\\')))
     os.makedirs(target, exist_ok=True)
     return jsonify({'success': True, 'message': 'Folder created'})
@@ -524,8 +565,8 @@ def api_create_folder(server_id):
 def api_rename(server_id):
     d = request.get_json() or {}
     server_dir = get_server_dir(server_id)
-    old_rel = d.get('old_path', '') or d.get('old_name', '')
-    new_rel = d.get('new_path', '') or d.get('new_name', '')
+    old_rel = d.get('old_path', '')
+    new_rel = d.get('new_path', '')
     old_path = os.path.normpath(os.path.join(server_dir, old_rel.lstrip('/\\')))
     new_path = os.path.normpath(os.path.join(server_dir, new_rel.lstrip('/\\')))
     
@@ -536,11 +577,10 @@ def api_rename(server_id):
     return jsonify({'error': 'Not found'}), 404
 
 @app.route('/api/extract/<server_id>', methods=['POST'])
-@app.route('/api/unzip/<server_id>', methods=['POST'])
 def api_extract(server_id):
     data = request.get_json() or {}
-    file_rel = data.get('file_path', '') or data.get('path', '') or data.get('filename', '')
-    target_rel = data.get('target_path', '') or data.get('target', '')
+    file_rel = data.get('file_path', '')
+    target_rel = data.get('target_path', '')
     server_dir = get_server_dir(server_id)
     
     zip_path = os.path.normpath(os.path.join(server_dir, file_rel.lstrip('/\\')))
@@ -561,8 +601,7 @@ def api_get_startup(server_id):
     server = servers.get(server_id, {})
     return jsonify({
         'main_file': server.get('main_file', 'main.py'), 
-        'req_file': server.get('requirements_file', 'requirements.txt'),
-        'requirements_file': server.get('requirements_file', 'requirements.txt')
+        'req_file': server.get('requirements_file', 'requirements.txt')
     })
 
 @app.route('/api/set_startup/<server_id>', methods=['POST'])
@@ -576,168 +615,6 @@ def api_set_startup(server_id):
         return jsonify({'success': True, 'message': 'Startup config saved'})
     return jsonify({'error': 'Not found'}), 404
 
-# ============================================
-# GitHub Deploy API
-# ============================================
-
-@app.route('/api/github/deploy/<server_id>', methods=['POST'])
-def api_github_deploy(server_id):
-    data = request.get_json() or {}
-    repo_url = data.get('repo_url', '').strip()
-    access_token = data.get('access_token', '').strip()
-    is_private = data.get('is_private', False)
-    
-    if not repo_url:
-        return jsonify({'status': 'error', 'msg': 'Repository URL is required!'}), 400
-    
-    server_dir = get_server_dir(server_id)
-    log_file = os.path.join(server_dir, 'github_deploy.log')
-    
-    def deploy_thread():
-        try:
-            import requests
-            def deploy_log(msg):
-                with open(log_file, 'a', encoding='utf-8') as f:
-                    f.write(f"[{datetime.now().strftime('%I:%M:%S %p')}] {msg}\n")
-            
-            clean_url = repo_url.replace('.git', '').rstrip('/')
-            parts = clean_url.split('github.com/')[-1].split('/')
-            owner, repo = parts[0], parts[1]
-            branch = parts[3] if len(parts) > 3 and parts[2] == 'tree' else 'main'
-            
-            api_url = f"https://api.github.com/repos/{owner}/{repo}/zipball/{branch}"
-            headers = {'Accept': 'application/vnd.github.v3+json'}
-            if is_private and access_token:
-                headers['Authorization'] = f'token {access_token}'
-            
-            response = requests.get(api_url, headers=headers, stream=True, timeout=60)
-            if response.status_code == 200:
-                temp_zip = os.path.join(server_dir, '_github_temp.zip')
-                with open(temp_zip, 'wb') as f:
-                    for chunk in response.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                with zipfile.ZipFile(temp_zip, 'r') as zf:
-                    for member in zf.namelist():
-                        relative_path = '/'.join(member.split('/')[1:])
-                        if not relative_path: 
-                            continue
-                        target_path = os.path.join(server_dir, relative_path)
-                        if member.endswith('/'):
-                            os.makedirs(target_path, exist_ok=True)
-                        else:
-                            os.makedirs(os.path.dirname(target_path), exist_ok=True)
-                            with zf.open(member) as source, open(target_path, 'wb') as target:
-                                shutil.copyfileobj(source, target)
-                if os.path.exists(temp_zip): 
-                    os.remove(temp_zip)
-                deploy_log("Deployment completed successfully!")
-            else:
-                deploy_log(f"GitHub Error: HTTP {response.status_code}")
-        except Exception as e:
-            deploy_log(f"Deployment Error: {str(e)}")
-            
-    threading.Thread(target=deploy_thread, daemon=True).start()
-    return jsonify({'status': 'success', 'msg': 'Deployment started'})
-
-@app.route('/api/github/logs/<server_id>')
-def api_github_logs(server_id):
-    log_file = os.path.join(get_server_dir(server_id), 'github_deploy.log')
-    logs = "> Ready for deployment..."
-    if os.path.exists(log_file):
-        try:
-            with open(log_file, 'r', encoding='utf-8') as f: 
-                logs = f.read()
-        except Exception: 
-            pass
-    return jsonify({'logs': logs})
-
-@app.route('/api/github/clear_logs/<server_id>', methods=['POST'])
-def api_github_clear_logs(server_id):
-    log_file = os.path.join(get_server_dir(server_id), 'github_deploy.log')
-    if os.path.exists(log_file): 
-        os.remove(log_file)
-    return jsonify({'status': 'success'})
-    
-# ============================================
-# মাল্টি-সার্ভার ম্যানেজমেন্ট API (Multi-Server APIs)
-# ============================================
-
-@app.route('/api/servers', methods=['GET'])
-def api_get_servers():
-    servers = load_servers()
-    server_list = []
-    for s_id, s_data in servers.items():
-        server_list.append({
-            'server_id': s_id,
-            'name': s_data.get('name', s_id),
-            'status': s_data.get('status', 'stopped'),
-            'created': s_data.get('created', '')
-        })
-    return jsonify({'servers': server_list})
-
-@app.route('/api/create_server', methods=['POST'])
-def api_create_server():
-    data = request.get_json() or {}
-    raw_name = data.get('name', '').strip()
-    if not raw_name:
-        return jsonify({'status': 'error', 'message': 'সার্ভারের নাম দিন!'}), 400
-    
-    # আইডি জেনারেট করা
-    clean_id = re.sub(r'[^a-zA-Z0-9_-]', '_', raw_name.lower())[:20]
-    if not clean_id:
-        clean_id = f"server_{int(time.time())}"
-    
-    servers = load_servers()
-    if clean_id in servers:
-        clean_id = f"{clean_id}_{int(time.time()) % 1000}"
-        
-    server_dir = get_server_dir(clean_id)
-    create_default_files(server_dir)
-    
-    servers[clean_id] = {
-        'server_id': clean_id,
-        'name': raw_name,
-        'type': 'python',
-        'ram': '1GB',
-        'disk': '1GB',
-        'status': 'stopped',
-        'pid': None,
-        'created': str(datetime.now()),
-        'main_file': 'main.py',
-        'requirements_file': 'requirements.txt',
-        'cpu_limit': 80,
-        'rate_limit_exceeded': False,
-        'stopped_by_user': False
-    }
-    save_servers(servers)
-    return jsonify({'status': 'success', 'server_id': clean_id, 'message': 'সার্ভার তৈরি হয়েছে!'})
-
-@app.route('/api/delete_server/<server_id>', methods=['POST', 'DELETE'])
-def api_delete_server(server_id):
-    if server_id == 'default':
-        return jsonify({'status': 'error', 'message': 'ডিফল্ট সার্ভার ডিলিট করা যাবে না'}), 400
-        
-    servers = load_servers()
-    if server_id not in servers:
-        return jsonify({'status': 'error', 'message': 'সার্ভার পাওয়া যায়নি'}), 404
-        
-    # রানিং থাকলে বন্ধ করা
-    if servers[server_id].get('pid'):
-        stop_bot_process(servers[server_id]['pid'])
-    RUNNING_PROCESSES.pop(server_id, None)
-    
-    # ফোল্ডার ডিলিট
-    server_dir = os.path.join(BOTS_DIR, server_id)
-    if os.path.exists(server_dir):
-        try:
-            shutil.rmtree(server_dir)
-        except Exception:
-            pass
-            
-    del servers[server_id]
-    save_servers(servers)
-    return jsonify({'status': 'success', 'message': 'সার্ভার ডিলিট সফল হয়েছে'})
-    
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
